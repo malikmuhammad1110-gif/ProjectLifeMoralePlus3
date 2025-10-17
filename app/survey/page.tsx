@@ -39,7 +39,7 @@ const DEFAULT_TIME: TimeRow[] = [
   { category: "Commute",       hours: 0,  ri: 5 },
   { category: "Relationships", hours: 0,  ri: 5 },
   { category: "Leisure",       hours: 0,  ri: 5 },
-  { category: "Health",        hours: 0,  ri: 5 }, // renamed from Gym
+  { category: "Health",        hours: 0,  ri: 5 },
   { category: "Chores",        hours: 0,  ri: 5 },
   { category: "Growth",        hours: 0,  ri: 5 },
   { category: "Other",         hours: 0,  ri: 5 },
@@ -52,7 +52,7 @@ export default function SurveyPage() {
     Array.from({ length: 24 }, () => ({}))
   );
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
-  const [ELI, setELI] = useState<number>(1);  // baseline 1
+  const [ELI, setELI] = useState<number>(1);
   const [crossLift, setCrossLift] = useState<boolean>(true);
   const [riMult, setRiMult] = useState<number>(1);
   const [calMax, setCalMax] = useState<number>(8.75);
@@ -103,10 +103,6 @@ export default function SurveyPage() {
       const data = await res.json();
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
       localStorage.setItem("lifeMoraleScore", String(data.finalLMI ?? ""));
-
-      // NEW: save a light snapshot so /next-steps can tailor tips
-      localStorage.setItem("LMI_INPUT", JSON.stringify({ answers, timeMap, ELI }));
-
       router.push("/results");
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");
@@ -117,7 +113,11 @@ export default function SurveyPage() {
   }
 
   const hoursText =
-    remaining === 0 ? "✅ 168/168 — Ready" : remaining > 0 ? `Allocate ${remaining} more` : `Over by ${-remaining}`;
+    remaining === 0
+      ? "✅ 168/168 — Ready"
+      : remaining > 0
+      ? `Allocate ${remaining} more`
+      : `Over by ${-remaining}`;
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -213,7 +213,8 @@ export default function SurveyPage() {
                     className="input"
                     type="number"
                     min={0}
-                    value={row.hours}
+                    value={row.hours || ""}
+                    placeholder="0"
                     onChange={(e) => setTime(i, "hours", Number(e.target.value || 0))}
                   />
                   <div className="muted" style={{ fontSize: 12 }}>hrs</div>
@@ -224,7 +225,8 @@ export default function SurveyPage() {
                     type="number"
                     min={1}
                     max={10}
-                    value={row.ri}
+                    value={row.ri || ""}
+                    placeholder="5"
                     onChange={(e) => setTime(i, "ri", Number(e.target.value || 5))}
                   />
                   <div className="muted" style={{ fontSize: 12 }}>RI</div>

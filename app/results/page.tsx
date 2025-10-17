@@ -7,15 +7,10 @@ import { useRouter } from "next/navigation";
 type Dim = "Fulfillment" | "Connection" | "Autonomy" | "Vitality" | "Peace";
 
 const Q2DIM: Dim[] = [
-  // 1–5 Fulfillment
   "Fulfillment","Fulfillment","Fulfillment","Fulfillment","Fulfillment",
-  // 6–10 Connection
   "Connection","Connection","Connection","Connection","Connection",
-  // 11–15 Autonomy
   "Autonomy","Autonomy","Autonomy","Autonomy","Autonomy",
-  // 16–20 Vitality
   "Vitality","Vitality","Vitality","Vitality","Vitality",
-  // 21–24 Peace
   "Peace","Peace","Peace","Peace",
 ];
 
@@ -75,44 +70,27 @@ const HIGH_MSG: Record<Dim, string> = {
 
 /** Gauge band + color */
 function band(score: number) {
-  if (score >= 7.5) return { label: "High", color: "#16a34a" };            // green
-  if (score >= 6.0) return { label: "Solid", color: "#0ea5e9" };           // blue
-  if (score >= 4.5) return { label: "Needs attention", color: "#f59e0b" }; // amber
-  return { label: "Low", color: "#ef4444" };                                // red
+  if (score >= 7.5) return { label: "High", color: "#16a34a" };
+  if (score >= 6.0) return { label: "Solid", color: "#0ea5e9" };
+  if (score >= 4.5) return { label: "Needs attention", color: "#f59e0b" };
+  return { label: "Low", color: "#ef4444" };
 }
 
-/** Find the dominant dimension in a list (Top Drainers/Uplifters) */
+/** Find the dominant dimension from a list */
 function dominantDim(
   items: Array<{ index: number }> | undefined,
   fallback: Dim
 ): Dim | null {
   if (!items?.length) return null;
-
   const counts: Record<Dim, number> = {
-    Fulfillment: 0,
-    Connection: 0,
-    Autonomy: 0,
-    Vitality: 0,
-    Peace: 0,
+    Fulfillment: 0, Connection: 0, Autonomy: 0, Vitality: 0, Peace: 0,
   };
-
   for (const it of items) {
-    const qi = typeof it.index === "number" ? it.index : -1;
-    if (qi >= 0 && qi < Q2DIM.length) {
-      const d = Q2DIM[qi];
-      counts[d] = (counts[d] ?? 0) + 1;
-    }
+    const idx = typeof it.index === "number" ? it.index : -1;
+    if (idx >= 0 && idx < Q2DIM.length) counts[Q2DIM[idx]]++;
   }
-
-  let best: Dim = fallback;
-  let bestN = -1;
-  (Object.keys(counts) as Dim[]).forEach((d) => {
-    if (counts[d] > bestN) {
-      bestN = counts[d];
-      best = d;
-    }
-  });
-
+  let best: Dim = fallback, bestN = -1;
+  (Object.keys(counts) as Dim[]).forEach(d => { if (counts[d] > bestN) { bestN = counts[d]; best = d; }});
   return bestN > 0 ? best : null;
 }
 
@@ -120,17 +98,12 @@ export default function ResultsPage() {
   const router = useRouter();
   const [result, setResult] = useState<any | null>(null);
 
-  // Safely load result from localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem("LMI_RESULT");
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      setResult(parsed);
-    } catch {
-      setResult(null);
-    }
+      if (raw) setResult(JSON.parse(raw));
+    } catch { setResult(null); }
   }, []);
 
   if (!result) {
@@ -146,31 +119,19 @@ export default function ResultsPage() {
   }
 
   const final = typeof result.finalLMI === "number" ? result.finalLMI : 0;
-  const raw = typeof result.rawLMS === "number" ? result.rawLMS : 0;
+  const raw   = typeof result.rawLMS === "number" ? result.rawLMS : 0;
   const riAdj = typeof result.riAdjusted === "number" ? result.riAdjusted : 0;
 
-  // Dominant categories from top-3s (with safe fallbacks)
-  const lowDim = useMemo<Dim | null>(
-    () => dominantDim(result.topDrainers as Array<{ index: number }>, "Peace"),
-    [result.topDrainers]
-  );
-  const highDim = useMemo<Dim | null>(
-    () => dominantDim(result.topUplifters as Array<{ index: number }>, "Fulfillment"),
-    [result.topUplifters]
-  );
+  const lowDim  = useMemo<Dim | null>(() => dominantDim(result.topDrainers, "Peace"), [result.topDrainers]);
+  const highDim = useMemo<Dim | null>(() => dominantDim(result.topUplifters, "Fulfillment"), [result.topUplifters]);
 
-  // Gauge math (0 → 8.75)
   const MAX = 8.75;
-  const pct = useMemo(() => {
-    const clamped = Math.max(0, Math.min(final, MAX));
-    return Math.round((clamped / MAX) * 100);
-  }, [final]);
-
+  const pct = useMemo(() => Math.round((Math.max(0, Math.min(final, MAX)) / MAX) * 100), [final]);
   const b = useMemo(() => band(final), [final]);
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      {/* Header KPIs */}
+      {/* KPIs */}
       <div className="card" style={{ background: "linear-gradient(135deg,#eaf2ff,#effdf9)" }}>
         <h1 style={{ marginTop: 0 }}>Your Life Morale</h1>
         <div className="kpi">
@@ -180,8 +141,7 @@ export default function ResultsPage() {
           <div className="pill" style={{ color: b.color }}><b>Status:</b> {b.label}</div>
         </div>
         <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>
-          With small changes here and there, this score can improve. Focus on one low area to lift,
-          and keep fueling one high area you love.
+          With small changes here and there, this score can improve. Focus on one low area to lift, and keep fueling one high area you love.
         </p>
       </div>
 
@@ -189,41 +149,19 @@ export default function ResultsPage() {
       <div className="card">
         <div className="label">Gauge</div>
         <div style={{ marginTop: 4 }}>
-          <div
-            style={{
-              height: 16,
-              borderRadius: 999,
-              border: "1px solid var(--border)",
-              overflow: "hidden",
-              background:
-                "linear-gradient(90deg, #fee2e2 0%, #fde68a 33%, #bfdbfe 66%, #dcfce7 100%)",
-              boxShadow: "inset 0 1px 3px rgba(15,23,42,.06)",
-            }}
-          >
-            <div
-              style={{
-                width: `${pct}%`,
-                height: "100%",
-                transition: "width .35s ease",
-                background:
-                  "linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #3b82f6 70%, #16a34a 100%)",
-              }}
-            />
+          <div style={{
+            height: 16, borderRadius: 999, border: "1px solid var(--border)",
+            overflow: "hidden",
+            background: "linear-gradient(90deg, #fee2e2 0%, #fde68a 33%, #bfdbfe 66%, #dcfce7 100%)",
+            boxShadow: "inset 0 1px 3px rgba(15,23,42,.06)",
+          }}>
+            <div style={{
+              width: `${pct}%`, height: "100%", transition: "width .35s ease",
+              background: "linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #3b82f6 70%, #16a34a 100%)",
+            }}/>
           </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 12,
-              color: "var(--muted)",
-              marginTop: 6,
-            }}
-          >
-            <span>0</span>
-            <span>2.2</span>
-            <span>4.4</span>
-            <span>6.6</span>
-            <span>8.75</span>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"var(--muted)", marginTop:6 }}>
+            <span>0</span><span>2.2</span><span>4.4</span><span>6.6</span><span>8.75</span>
           </div>
           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
             <div className="pill" style={{ borderColor: "transparent", background: "#fff" }}>
@@ -234,7 +172,7 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Personalized Insights */}
+      {/* ---- PERSONALIZED INSIGHTS (new cards) ---- */}
       <div className="grid cols-2">
         <div className="card">
           <div className="label">Focus area (low)</div>
@@ -242,7 +180,6 @@ export default function ResultsPage() {
             <>
               <h2 style={{ marginTop: 0 }}>{lowDim}</h2>
               <p>{LOW_MSG[lowDim]}</p>
-              {/* Contextual nudges */}
               {lowDim === "Autonomy" && (
                 <ul className="muted" style={{ marginTop: 8 }}>
                   <li>Commute heavy? Leave 10–15 mins earlier, try a favorite playlist/podcast, or batch errands.</li>
@@ -291,8 +228,9 @@ export default function ResultsPage() {
           )}
         </div>
       </div>
+      {/* ---- END PERSONALIZED INSIGHTS ---- */}
 
-      {/* Top 3s (transparency) */}
+      {/* Top 3s */}
       <div className="grid cols-2">
         <div className="card">
           <div className="label">Top Drainers</div>
@@ -300,8 +238,7 @@ export default function ResultsPage() {
             <ol>
               {result.topDrainers.map((d: any) => {
                 const idx = typeof d.index === "number" ? d.index : -1;
-                const safeLabel =
-                  idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
+                const safeLabel = idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
                 const dim = idx >= 0 && idx < Q2DIM.length ? Q2DIM[idx] : "Fulfillment";
                 return (
                   <li key={`dr-${idx}`}>
@@ -322,8 +259,7 @@ export default function ResultsPage() {
             <ol>
               {result.topUplifters.map((d: any) => {
                 const idx = typeof d.index === "number" ? d.index : -1;
-                const safeLabel =
-                  idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
+                const safeLabel = idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
                 const dim = idx >= 0 && idx < Q2DIM.length ? Q2DIM[idx] : "Fulfillment";
                 return (
                   <li key={`up-${idx}`}>
@@ -339,7 +275,7 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Next steps */}
+      {/* Actions */}
       <div className="card">
         <div className="label">Next steps</div>
         <ul style={{ margin: "8px 0" }}>

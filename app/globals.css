@@ -1,0 +1,52 @@
+:root{
+  --bg:#F7F9FA;
+  --panel:#FFFFFF;
+  --text:#0f172a;
+  --muted:#64748b;
+  --primary:#4A90E2;   /* soft blue */
+  --accent:#56C2B7;    /* teal */
+  --ring:#CFE7FF;
+  --border:#e5e7eb;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text)}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.hero{
+  background:linear-gradient(135deg,#eef6ff 0%, #f5fffd 100%);
+  border:1px solid var(--border);
+  border-radius:16px;padding:28px;
+  display:flex;gap:20px;align-items:center;
+}
+.hero img{width:64px;height:64px}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 14px;border-radius:10px;border:1px solid var(--border);
+  background:var(--panel);cursor:pointer;font-weight:600;
+}
+.btn.primary{background:var(--primary);color:#fff;border-color:transparent}
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;
+}
+.grid{display:grid;gap:16px}
+.grid.cols-2{grid-template-columns:1fr 1fr}
+.label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.input, .select{
+  width:100%;padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;background:#fff;outline:none;
+}
+.input:focus, .select:focus{box-shadow:0 0 0 4px var(--ring);border-color:#b3d6ff}
+.table{width:100%;border-collapse:separate;border-spacing:0 0.5rem}
+.table th{font-size:12px;color:var(--muted);text-align:left}
+.row{
+  display:grid;grid-template-columns:28px 1fr 120px 120px;gap:10px;
+  align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;
+}
+.slider{width:100%}
+.kpi{display:flex;gap:18px;flex-wrap:wrap}
+.kpi .pill{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#fff}
+.footer-note{color:var(--muted);font-size:12px;margin-top:8px}

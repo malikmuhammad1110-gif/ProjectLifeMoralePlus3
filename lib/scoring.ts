@@ -1,10 +1,10 @@
 // lib/scoring.ts
-// Full Life Morale model: 24-Q calibration (10→8.75), 168h time map, RI, ELI ceiling, optional Cross-Lift, scenario.
+// Full Life Morale model: 24-Q calibration (10→8.75), 168h time map, RI, ELI ceiling, optional Cross-Lift.
 
-export type Answer = { score?: number; scenarioScore?: number; note?: string };
+export type Answer = { score?: number; note?: string };
 export type TimeCategory =
   | "Sleep" | "Work" | "Commute" | "Relationships" | "Leisure"
-  | "Gym" | "Chores" | "Growth" | "Other";
+  | "Health" | "Chores" | "Growth" | "Other";
 export type TimeRow = { category: TimeCategory; hours: number; ri: number };
 
 export type DimensionKey = "Fulfillment" | "Connection" | "Autonomy" | "Vitality" | "Peace";
@@ -17,17 +17,14 @@ export type Input = {
 };
 
 export type Output = {
-  calibrated: { current: (number|undefined)[]; scenario: (number|undefined)[] };
-  sectionAverages: {
-    current: Record<DimensionKey, number | null>;
-    scenario: Record<DimensionKey, number | null>;
-  };
+  calibrated: { current: (number|undefined)[] };
+  sectionAverages: { current: Record<DimensionKey, number | null> };
   rawLMS: number;            // time-weighted quality
   riAdjusted: number;        // after residual influence factor
   finalLMI: number;          // after ELI (ceiling)
-  rawLMS_scn: number;
-  riAdjusted_scn: number;
-  finalLMI_scn: number;
+  rawLMS_scn: number;        // kept for compatibility (same as rawLMS now)
+  riAdjusted_scn: number;    // kept for compatibility (same as riAdjusted)
+  finalLMI_scn: number;      // kept for compatibility (same as finalLMI)
   topDrainers: { index: number; score: number; note?: string }[];
   topUplifters: { index: number; score: number; note?: string }[];
 };
@@ -85,7 +82,7 @@ function qualityFromSections(
   return {
     Work:           d.Autonomy ?? base ?? 0,
     Commute:        d.Peace ?? base ?? 0,
-    Gym:            d.Vitality ?? base ?? 0,
+    Health:         d.Vitality ?? base ?? 0,
     Relationships:  d.Connection ?? base ?? 0,
     Leisure:        d.Fulfillment ?? base ?? 0,
     Other:          base ?? 0,
@@ -99,9 +96,8 @@ export function scoreLMI(input: Input): Output {
     crossLift:   input.config?.crossLift ?? DEFAULT_CONFIG.crossLift,
   };
 
-  // 1) Calibrate 24 answers (current & optional scenario)
+  // 1) Calibrate 24 answers (current only)
   const current = input.answers.map(a => calibrate(a.score, cfg.calibration.k, cfg.calibration.max));
-  const scenario = input.answers.map(a => calibrate(a.scenarioScore, cfg.calibration.k, cfg.calibration.max));
 
   // 2) Section averages (5 dimensions)
   const sectionCurrent: Record<DimensionKey, number | null> = {
@@ -111,16 +107,8 @@ export function scoreLMI(input: Input): Output {
     Vitality:    avg(DIM_MAP.Vitality.map(i => current[i])),
     Peace:       avg(DIM_MAP.Peace.map(i => current[i])),
   };
-  const sectionScenario: Record<DimensionKey, number | null> = {
-    Fulfillment: avg(DIM_MAP.Fulfillment.map(i => scenario[i])),
-    Connection:  avg(DIM_MAP.Connection.map(i => scenario[i])),
-    Autonomy:    avg(DIM_MAP.Autonomy.map(i => scenario[i])),
-    Vitality:    avg(DIM_MAP.Vitality.map(i => scenario[i])),
-    Peace:       avg(DIM_MAP.Peace.map(i => scenario[i])),
-  };
 
   const baseAvgAll    = avg(current);
-  const baseAvgAll_s  = avg(scenario);
 
   // 3) Time map & defaults
   const find = (c: TimeCategory) =>
@@ -133,37 +121,36 @@ export function scoreLMI(input: Input): Output {
     Commute:        find("Commute"),
     Relationships:  find("Relationships"),
     Leisure:        find("Leisure"),
-    Gym:            find("Gym"),
+    Health:         find("Health"),
     Chores:         find("Chores"),
     Growth:         find("Growth"),
     Other:          find("Other"),
   };
 
   const awakeHours = Math.max(0, 168 - by.Sleep.hours);
-  const allocatedAwake = by.Work.hours + by.Commute.hours + by.Gym.hours + by.Relationships.hours + by.Leisure.hours;
-  const otherAwake = Math.max(0, awakeHours - allocatedAwake); // auto-fills "Other" if user under-allocates
+  const allocatedAwake = by.Work.hours + by.Commute.hours + by.Health.hours + by.Relationships.hours + by.Leisure.hours;
+  const otherAwake = Math.max(0, awakeHours - allocatedAwake); // auto-fills "Other" if under-allocated
 
-  // 4) Domain qualities (current + scenario)
+  // 4) Domain qualities
   const dimQ   = qualityFromSections(sectionCurrent,  baseAvgAll);
-  const dimQ_s = qualityFromSections(sectionScenario, baseAvgAll_s ?? baseAvgAll);
 
-  // Optional Cross-Lift: relationships/gym/leisure can lift Work quality
+  // Optional Cross-Lift: relationships/health/leisure can lift Work quality
   let workQ = dimQ.Work;
   if (cfg.crossLift.enabled) {
     const relFrac  = awakeHours ? by.Relationships.hours / awakeHours : 0;
-    const gymFrac  = awakeHours ? by.Gym.hours / awakeHours : 0;
+    const hlthFrac = awakeHours ? by.Health.hours / awakeHours : 0;
     const leisFrac = awakeHours ? by.Leisure.hours / awakeHours : 0;
 
     const relRI  = Math.max(0, riToInternal(by.Relationships.ri));
-    const gymRI  = Math.max(0, riToInternal(by.Gym.ri));
+    const hlthRI = Math.max(0, riToInternal(by.Health.ri));
     const leisRI = Math.max(0, riToInternal(by.Leisure.ri));
 
-    const uplift = cfg.crossLift.alpha * (relFrac*relRI + gymFrac*gymRI + leisFrac*leisRI) * ((10 - workQ) / 10);
+    const uplift = cfg.crossLift.alpha * (relFrac*relRI + hlthFrac*hlthRI + leisFrac*leisRI) * ((10 - workQ) / 10);
     workQ = clamp(workQ + uplift, 1, 10);
   }
 
   const commuteQ = dimQ.Commute;
-  const gymQ     = dimQ.Gym;
+  const healthQ  = dimQ.Health;
   const relQ     = dimQ.Relationships;
   const leisQ    = dimQ.Leisure;
   const otherQ   = dimQ.Other;
@@ -172,7 +159,7 @@ export function scoreLMI(input: Input): Output {
   const awakeWeighted =
     (by.Work.hours      * workQ)    +
     (by.Commute.hours   * commuteQ) +
-    (by.Gym.hours       * gymQ)     +
+    (by.Health.hours    * healthQ)  +
     (by.Relationships.hours * relQ) +
     (by.Leisure.hours   * leisQ)    +
     (otherAwake         * otherQ);
@@ -188,7 +175,7 @@ export function scoreLMI(input: Input): Output {
   const netRI =
     (by.Work.hours/168)          * riToInternal(by.Work.ri) +
     (by.Commute.hours/168)       * riToInternal(by.Commute.ri) +
-    (by.Gym.hours/168)           * riToInternal(by.Gym.ri) +
+    (by.Health.hours/168)        * riToInternal(by.Health.ri) +
     (by.Relationships.hours/168) * riToInternal(by.Relationships.ri) +
     (by.Leisure.hours/168)       * riToInternal(by.Leisure.ri) +
     (otherAwake/168)             * riToInternal(by.Other.ri);
@@ -199,52 +186,17 @@ export function scoreLMI(input: Input): Output {
   const LMC = 10 - 0.2 * (input.ELI ?? 1); // higher ELI lowers the ceiling slightly
   const finalLMI = riAdjusted * (LMC / 10);
 
-  // Scenario (same hours/RI, different calibrated qualities if provided)
-  let workQ_s = dimQ_s.Work ?? workQ;
-  if (cfg.crossLift.enabled) {
-    const relFrac  = awakeHours ? by.Relationships.hours / awakeHours : 0;
-    const gymFrac  = awakeHours ? by.Gym.hours / awakeHours : 0;
-    const leisFrac = awakeHours ? by.Leisure.hours / awakeHours : 0;
-
-    const relRI  = Math.max(0, riToInternal(by.Relationships.ri));
-    const gymRI  = Math.max(0, riToInternal(by.Gym.ri));
-    const leisRI = Math.max(0, riToInternal(by.Leisure.ri));
-
-    const uplift = cfg.crossLift.alpha * (relFrac*relRI + gymFrac*gymRI + leisFrac*leisRI) * ((10 - workQ_s) / 10);
-    workQ_s = clamp(workQ_s + uplift, 1, 10);
-  }
-
-  const commuteQ_s = dimQ_s.Commute ?? commuteQ;
-  const gymQ_s     = dimQ_s.Gym ?? gymQ;
-  const relQ_s     = dimQ_s.Relationships ?? relQ;
-  const leisQ_s    = dimQ_s.Leisure ?? leisQ;
-  const otherQ_s   = dimQ_s.Other ?? otherQ;
-
-  const awakeWeighted_s =
-    (by.Work.hours      * workQ_s)    +
-    (by.Commute.hours   * commuteQ_s) +
-    (by.Gym.hours       * gymQ_s)     +
-    (by.Relationships.hours * relQ_s) +
-    (by.Leisure.hours   * leisQ_s)    +
-    (otherAwake         * otherQ_s);
-
-  const sleepQ_s   = (10 + (awakeHours ? (awakeWeighted_s/awakeHours) : 0)) / 2;
-  const rawLMS_s   =
-    (awakeWeighted_s + by.Sleep.hours * sleepQ_s) / 168;
-  const riAdjusted_s = rawLMS_s * (1 + cfg.ri.globalMultiplier * netRI);
-  const finalLMI_s   = riAdjusted_s * (LMC / 10);
-
-  // Top 3 drainers / uplifters from raw user scores (pre-calibration)
+  // Top 3 drainers / uplifters from raw user scores
   const baseScores = input.answers.map(a => a.score ?? NaN);
   const idxs = baseScores.map((s, i) => ({ i, s })).filter(x => !Number.isNaN(x.s));
   const drains = [...idxs].sort((a, b) => a.s - b.s).slice(0, 3).map(x => ({ index: x.i, score: x.s, note: input.answers[x.i].note }));
   const lifts  = [...idxs].sort((a, b) => b.s - a.s).slice(0, 3).map(x => ({ index: x.i, score: x.s, note: input.answers[x.i].note }));
 
   return {
-    calibrated: { current, scenario },
-    sectionAverages: { current: sectionCurrent, scenario: sectionScenario },
+    calibrated: { current },
+    sectionAverages: { current: sectionCurrent },
     rawLMS, riAdjusted, finalLMI,
-    rawLMS_scn: rawLMS_s, riAdjusted_scn: riAdjusted_s, finalLMI_scn: finalLMI_s,
+    rawLMS_scn: rawLMS, riAdjusted_scn: riAdjusted, finalLMI_scn: finalLMI, // compatibility
     topDrainers: drains, topUplifters: lifts,
   };
 }

@@ -19,3 +19,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
             <div style={{display:"flex",gap:8}}>
               <a className="btn" href="/survey">Survey</a>
+              <a className="btn" href="/results">Results</a>
+            </div>
+          </div>
+        </div>
+        <main className="container">{children}</main>
+      </body>
+    </html>
+  );
+}

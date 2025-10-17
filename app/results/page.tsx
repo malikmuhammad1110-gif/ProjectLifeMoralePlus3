@@ -3,7 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const QUESTIONS = [
+/** 24-question mapping → 5 dimensions */
+type Dim = "Fulfillment" | "Connection" | "Autonomy" | "Vitality" | "Peace";
+
+const Q2DIM: Dim[] = [
+  // 1–5 Fulfillment
+  "Fulfillment","Fulfillment","Fulfillment","Fulfillment","Fulfillment",
+  // 6–10 Connection
+  "Connection","Connection","Connection","Connection","Connection",
+  // 11–15 Autonomy
+  "Autonomy","Autonomy","Autonomy","Autonomy","Autonomy",
+  // 16–20 Vitality
+  "Vitality","Vitality","Vitality","Vitality","Vitality",
+  // 21–24 Peace
+  "Peace","Peace","Peace","Peace",
+];
+
+const QUESTIONS: string[] = [
   "Life direction / sense of trajectory",
   "Alignment with personal values",
   "Sense of purpose / meaning",
@@ -30,36 +46,92 @@ const QUESTIONS = [
   "Inner peace / contentment",
 ];
 
-// Banding + colors for the gauge label
+/** Feedback templates per dimension */
+const LOW_MSG: Record<Dim, string> = {
+  Fulfillment:
+    "You may be feeling low direction or meaning. Choose one small weekly goal aligned to your values—something personally meaningful, not just productive.",
+  Connection:
+    "Disconnection or tension can weigh heavily. Do one intentional reach-out this week—a call, coffee, or gratitude text—to rebuild warmth.",
+  Autonomy:
+    "If work/finances feel tight, reduce decision fatigue. Simplify routines, prep ahead, and protect one boundary to regain control.",
+  Vitality:
+    "Energy and rest might need care. Aim for a steady sleep window, short daily walks, and simple nourishing meals to lift your baseline.",
+  Peace:
+    "Stress can dim everything. Add a 3–5 minute reset ritual (deep breathing, journaling, or quiet pause) between tasks to settle your system.",
+};
+
+const HIGH_MSG: Record<Dim, string> = {
+  Fulfillment:
+    "Your sense of meaning is a major anchor. Keep one weekly practice that grows you—learning, creating, or serving—in the calendar.",
+  Connection:
+    "Strong bonds are fueling you. Keep showing appreciation and scheduling time together—consistency keeps this protective.",
+  Autonomy:
+    "Your self-direction is working. Maintain clear boundaries and simple systems so your freedom stays stable, not fragile.",
+  Vitality:
+    "Your energy habits are paying off. Protect sleep, hydration, sunlight, and light movement—they compound your morale.",
+  Peace:
+    "Your calm presence steadies everything else. Keep protecting quiet time and mental margins so this stays sustainable.",
+};
+
+/** Gauge band + color */
 function band(score: number) {
-  if (score >= 7.5) return { label: "High", color: "#16a34a" };        // green
-  if (score >= 6.0) return { label: "Solid", color: "#0ea5e9" };       // blue
+  if (score >= 7.5) return { label: "High", color: "#16a34a" };            // green
+  if (score >= 6.0) return { label: "Solid", color: "#0ea5e9" };           // blue
   if (score >= 4.5) return { label: "Needs attention", color: "#f59e0b" }; // amber
-  return { label: "Low", color: "#ef4444" };                            // red
+  return { label: "Low", color: "#ef4444" };                                // red
+}
+
+/** Find the dominant dimension in a list (Top Drainers/Uplifters) */
+function dominantDim(
+  items: Array<{ index: number }> | undefined,
+  fallback: Dim
+): Dim | null {
+  if (!items?.length) return null;
+
+  const counts: Record<Dim, number> = {
+    Fulfillment: 0,
+    Connection: 0,
+    Autonomy: 0,
+    Vitality: 0,
+    Peace: 0,
+  };
+
+  for (const it of items) {
+    const qi = typeof it.index === "number" ? it.index : -1;
+    if (qi >= 0 && qi < Q2DIM.length) {
+      const d = Q2DIM[qi];
+      counts[d] = (counts[d] ?? 0) + 1;
+    }
+  }
+
+  let best: Dim = fallback;
+  let bestN = -1;
+  (Object.keys(counts) as Dim[]).forEach((d) => {
+    if (counts[d] > bestN) {
+      bestN = counts[d];
+      best = d;
+    }
+  });
+
+  return bestN > 0 ? best : null;
 }
 
 export default function ResultsPage() {
   const router = useRouter();
   const [result, setResult] = useState<any | null>(null);
 
+  // Safely load result from localStorage
   useEffect(() => {
-    const raw = typeof window !== "undefined" ? localStorage.getItem("LMI_RESULT") : null;
-    setResult(raw ? JSON.parse(raw) : null);
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("LMI_RESULT");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      setResult(parsed);
+    } catch {
+      setResult(null);
+    }
   }, []);
-
-  const final = result?.finalLMI as number | undefined;
-  const raw = result?.rawLMS as number | undefined;
-  const riAdj = result?.riAdjusted as number | undefined;
-
-  // Gauge math (0 → 8.75)
-  const MAX = 8.75;
-  const pct = useMemo(() => {
-    if (typeof final !== "number") return 0;
-    const clamped = Math.max(0, Math.min(final, MAX));
-    return Math.round((clamped / MAX) * 100);
-  }, [final]);
-
-  const b = useMemo(() => band(final ?? 0), [final]);
 
   if (!result) {
     return (
@@ -73,27 +145,50 @@ export default function ResultsPage() {
     );
   }
 
+  const final = typeof result.finalLMI === "number" ? result.finalLMI : 0;
+  const raw = typeof result.rawLMS === "number" ? result.rawLMS : 0;
+  const riAdj = typeof result.riAdjusted === "number" ? result.riAdjusted : 0;
+
+  // Dominant categories from top-3s (with safe fallbacks)
+  const lowDim = useMemo<Dim | null>(
+    () => dominantDim(result.topDrainers as Array<{ index: number }>, "Peace"),
+    [result.topDrainers]
+  );
+  const highDim = useMemo<Dim | null>(
+    () => dominantDim(result.topUplifters as Array<{ index: number }>, "Fulfillment"),
+    [result.topUplifters]
+  );
+
+  // Gauge math (0 → 8.75)
+  const MAX = 8.75;
+  const pct = useMemo(() => {
+    const clamped = Math.max(0, Math.min(final, MAX));
+    return Math.round((clamped / MAX) * 100);
+  }, [final]);
+
+  const b = useMemo(() => band(final), [final]);
+
   return (
     <div className="grid" style={{ gap: 18 }}>
       {/* Header KPIs */}
       <div className="card" style={{ background: "linear-gradient(135deg,#eaf2ff,#effdf9)" }}>
         <h1 style={{ marginTop: 0 }}>Your Life Morale</h1>
         <div className="kpi">
-          <div className="pill"><b>Raw LMS:</b> {raw?.toFixed(2)}</div>
-          <div className="pill"><b>RI-adjusted:</b> {riAdj?.toFixed(2)}</div>
-          <div className="pill"><b>Final LMI:</b> {final?.toFixed(2)} / {MAX}</div>
+          <div className="pill"><b>Raw LMS:</b> {raw.toFixed(2)}</div>
+          <div className="pill"><b>RI-adjusted:</b> {riAdj.toFixed(2)}</div>
+          <div className="pill"><b>Final LMI:</b> {final.toFixed(2)} / {MAX}</div>
           <div className="pill" style={{ color: b.color }}><b>Status:</b> {b.label}</div>
         </div>
         <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>
-          With small changes here and there, this score can improve. Focus on one low area to lift, and keep fueling one high area you love.
+          With small changes here and there, this score can improve. Focus on one low area to lift,
+          and keep fueling one high area you love.
         </p>
       </div>
 
-      {/* Gauge Card */}
+      {/* Gauge */}
       <div className="card">
         <div className="label">Gauge</div>
         <div style={{ marginTop: 4 }}>
-          {/* Track */}
           <div
             style={{
               height: 16,
@@ -105,18 +200,16 @@ export default function ResultsPage() {
               boxShadow: "inset 0 1px 3px rgba(15,23,42,.06)",
             }}
           >
-            {/* Fill */}
             <div
               style={{
                 width: `${pct}%`,
                 height: "100%",
                 transition: "width .35s ease",
-                background: "linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #3b82f6 70%, #16a34a 100%)",
+                background:
+                  "linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #3b82f6 70%, #16a34a 100%)",
               }}
             />
           </div>
-
-          {/* Ticks + label */}
           <div
             style={{
               display: "flex",
@@ -132,37 +225,91 @@ export default function ResultsPage() {
             <span>6.6</span>
             <span>8.75</span>
           </div>
-
           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              className="pill"
-              style={{
-                borderColor: "transparent",
-                background: "#fff",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              <b>Final LMI:</b> {final?.toFixed(2)} ({pct}% of max)
+            <div className="pill" style={{ borderColor: "transparent", background: "#fff" }}>
+              <b>Final LMI:</b> {final.toFixed(2)} ({pct}% of max)
             </div>
-            <div className="pill" style={{ color: b.color }}>
-              {b.label}
-            </div>
+            <div className="pill" style={{ color: b.color }}>{b.label}</div>
           </div>
         </div>
       </div>
 
-      {/* Top 3s */}
+      {/* Personalized Insights */}
+      <div className="grid cols-2">
+        <div className="card">
+          <div className="label">Focus area (low)</div>
+          {lowDim ? (
+            <>
+              <h2 style={{ marginTop: 0 }}>{lowDim}</h2>
+              <p>{LOW_MSG[lowDim]}</p>
+              {/* Contextual nudges */}
+              {lowDim === "Autonomy" && (
+                <ul className="muted" style={{ marginTop: 8 }}>
+                  <li>Commute heavy? Leave 10–15 mins earlier, try a favorite playlist/podcast, or batch errands.</li>
+                  <li>Workload tense? Time-box one hard task and finish one quick win early.</li>
+                </ul>
+              )}
+              {lowDim === "Vitality" && (
+                <ul className="muted" style={{ marginTop: 8 }}>
+                  <li>Anchor sleep/wake within ~60 minutes daily.</li>
+                  <li>10–20 minute walk or stretch most days; keep water nearby.</li>
+                </ul>
+              )}
+              {lowDim === "Peace" && (
+                <ul className="muted" style={{ marginTop: 8 }}>
+                  <li>Micro-reset: 3 slow breaths before transitions.</li>
+                  <li>Write one concern → choose the next smallest action.</li>
+                </ul>
+              )}
+            </>
+          ) : (
+            <p className="muted">No clear low pattern detected.</p>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="label">Keep fueling (high)</div>
+          {highDim ? (
+            <>
+              <h2 style={{ marginTop: 0 }}>{highDim}</h2>
+              <p>{HIGH_MSG[highDim]}</p>
+              {highDim === "Connection" && (
+                <ul className="muted" style={{ marginTop: 8 }}>
+                  <li>Schedule a small weekly ritual with a favorite person.</li>
+                  <li>Send one quick appreciation message today.</li>
+                </ul>
+              )}
+              {highDim === "Vitality" && (
+                <ul className="muted" style={{ marginTop: 8 }}>
+                  <li>Protect your sleep and hydration streaks.</li>
+                  <li>Keep movement simple and consistent.</li>
+                </ul>
+              )}
+            </>
+          ) : (
+            <p className="muted">No clear high pattern detected.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Top 3s (transparency) */}
       <div className="grid cols-2">
         <div className="card">
           <div className="label">Top Drainers</div>
-          {result.topDrainers?.length ? (
+          {Array.isArray(result.topDrainers) && result.topDrainers.length ? (
             <ol>
-              {result.topDrainers.map((d: any) => (
-                <li key={d.index}>
-                  Q{d.index + 1}: {QUESTIONS[d.index]} — <b>{d.score}</b>
-                  {d.note ? <span> · <i>{d.note}</i></span> : null}
-                </li>
-              ))}
+              {result.topDrainers.map((d: any) => {
+                const idx = typeof d.index === "number" ? d.index : -1;
+                const safeLabel =
+                  idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
+                const dim = idx >= 0 && idx < Q2DIM.length ? Q2DIM[idx] : "Fulfillment";
+                return (
+                  <li key={`dr-${idx}`}>
+                    Q{idx + 1} ({dim}): {safeLabel} — <b>{d.score}</b>
+                    {d.note ? <span> · <i>{d.note}</i></span> : null}
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <p className="muted">No items yet.</p>
@@ -171,14 +318,20 @@ export default function ResultsPage() {
 
         <div className="card">
           <div className="label">Top Uplifters</div>
-          {result.topUplifters?.length ? (
+          {Array.isArray(result.topUplifters) && result.topUplifters.length ? (
             <ol>
-              {result.topUplifters.map((d: any) => (
-                <li key={d.index}>
-                  Q{d.index + 1}: {QUESTIONS[d.index]} — <b>{d.score}</b>
-                  {d.note ? <span> · <i>{d.note}</i></span> : null}
-                </li>
-              ))}
+              {result.topUplifters.map((d: any) => {
+                const idx = typeof d.index === "number" ? d.index : -1;
+                const safeLabel =
+                  idx >= 0 && idx < QUESTIONS.length ? QUESTIONS[idx] : `Q${idx + 1}`;
+                const dim = idx >= 0 && idx < Q2DIM.length ? Q2DIM[idx] : "Fulfillment";
+                return (
+                  <li key={`up-${idx}`}>
+                    Q{idx + 1} ({dim}): {safeLabel} — <b>{d.score}</b>
+                    {d.note ? <span> · <i>{d.note}</i></span> : null}
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <p className="muted">No items yet.</p>

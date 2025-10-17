@@ -3,72 +3,113 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-function badgeFor(score: number) {
-  if (score >= 7.5) return { label: "High", color: "linear-gradient(135deg,#b2ecff,#d7ffe8)" };
-  if (score >= 6.0) return { label: "Solid", color: "linear-gradient(135deg,#e9f4ff,#f1fff9)" };
-  if (score >= 4.5) return { label: "Needs Attention", color: "linear-gradient(135deg,#fff6e5,#fffdf2)" };
-  return { label: "Low", color: "linear-gradient(135deg,#ffe5e5,#fff2f2)" };
-}
+const QUESTIONS = [
+  "Life direction / sense of trajectory",
+  "Alignment with personal values",
+  "Sense of purpose / meaning",
+  "Personal growth / learning",
+  "Pride in overcoming challenges",
+  "Emotional connection to close people",
+  "Support from family / friends",
+  "Romantic / intimate fulfillment",
+  "Contribution / helping others",
+  "Authentic self-expression",
+  "Control over time / schedule",
+  "Work meaning / responsibility quality",
+  "Manageable workload / routine",
+  "Freedom to choose / autonomy",
+  "Financial security",
+  "Physical health & energy",
+  "Rest & sleep quality",
+  "Nutrition & self-care",
+  "Motivation to care for body",
+  "Comfort / confidence in own skin",
+  "Stress / anxiety management",
+  "Emotional balance / calm",
+  "Hopefulness about the future",
+  "Inner peace / contentment",
+];
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [score, setScore] = useState<number | null>(null);
+  const [result, setResult] = useState<any | null>(null);
 
   useEffect(() => {
-    const raw = typeof window !== "undefined" ? localStorage.getItem("lifeMoraleScore") : null;
-    setScore(raw ? Number(raw) : null);
+    const raw = typeof window !== "undefined" ? localStorage.getItem("LMI_RESULT") : null;
+    setResult(raw ? JSON.parse(raw) : null);
   }, []);
 
-  if (score === null || Number.isNaN(score)) {
+  if (!result) {
     return (
       <div className="card">
         <h2>No results yet</h2>
-        <p className="footer-note">Take the survey to see your Life Morale score.</p>
-        <button className="btn primary" onClick={() => router.push("/survey")}>Start Survey</button>
+        <p className="muted">Take the survey to see your Life Morale.</p>
+        <button className="btn primary" onClick={() => router.push("/survey")}>
+          Start survey
+        </button>
       </div>
     );
   }
 
-  const band = badgeFor(score);
-
   return (
     <div className="grid" style={{ gap: 18 }}>
-      <div className="card" style={{ background: band.color }}>
+      <div className="card" style={{ background: "linear-gradient(135deg,#eaf2ff,#effdf9)" }}>
         <h1 style={{ marginTop: 0 }}>Your Life Morale</h1>
         <div className="kpi">
-          <div className="pill"><b>Score:</b> {score.toFixed(2)} / 8.75</div>
-          <div className="pill"><b>Status:</b> {band.label}</div>
+          <div className="pill"><b>Raw LMS:</b> {result.rawLMS?.toFixed(2)}</div>
+          <div className="pill"><b>RI-adjusted:</b> {result.riAdjusted?.toFixed(2)}</div>
+          <div className="pill"><b>Final LMI:</b> {result.finalLMI?.toFixed(2)}</div>
         </div>
-        <p className="footer-note">
-          Your score is scaled so that typical “10s” map to a realistic ceiling of 8.75.
+        <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>
+          With small changes here and there, this score can improve. Focus on one low area to lift, and keep fueling one high area you love.
         </p>
       </div>
 
       <div className="grid cols-2">
         <div className="card">
-          <div className="label">What this means</div>
-          <p>
-            This number reflects your current balance of purpose, relationships, autonomy,
-            vitality, and peace. It’s a snapshot — not a verdict. Small, targeted changes
-            tend to move it more than trying to fix everything at once.
-          </p>
+          <div className="label">Top Drainers</div>
+          {result.topDrainers?.length ? (
+            <ol>
+              {result.topDrainers.map((d: any) => (
+                <li key={d.index}>
+                  Q{d.index + 1}: {QUESTIONS[d.index]} — <b>{d.score}</b>
+                  {d.note ? <span> · <i>{d.note}</i></span> : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="muted">No items yet.</p>
+          )}
         </div>
+
         <div className="card">
-          <div className="label">Quick next steps</div>
-          <ul>
-            <li>Pick <b>one</b> daily habit that lifts your energy (walk, stretch, water, sunlight).</li>
-            <li>Reduce <b>one</b> recurring stressor (prep, automate, delegate, or say no).</li>
-            <li>Do <b>one</b> connection touchpoint today (call, text, gratitude note).</li>
-          </ul>
+          <div className="label">Top Uplifters</div>
+          {result.topUplifters?.length ? (
+            <ol>
+              {result.topUplifters.map((d: any) => (
+                <li key={d.index}>
+                  Q{d.index + 1}: {QUESTIONS[d.index]} — <b>{d.score}</b>
+                  {d.note ? <span> · <i>{d.note}</i></span> : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="muted">No items yet.</p>
+          )}
         </div>
       </div>
 
       <div className="card">
-        <div className="label">Run it again</div>
-        <p>Re-take the survey after a week or when something changes to see how choices impact your morale.</p>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn" onClick={() => router.push("/survey")}>Retake Survey</button>
-          <button className="btn" onClick={() => router.push("/")}>Back Home</button>
+        <div className="label">Next steps</div>
+        <ul style={{ margin: "8px 0" }}>
+          <li>Pick <b>one</b> low area → make a tiny daily action.</li>
+          <li>Protect <b>one</b> high area → schedule it.</li>
+          <li>Consider light movement (walks, stretching) to support Health and energy.</li>
+          <li>Re-run in 7 days and compare your LMI.</li>
+        </ul>
+        <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+          <button className="btn" onClick={() => router.push("/survey")}>Retake survey</button>
+          <button className="btn ghost" onClick={() => router.push("/")}>Home</button>
         </div>
       </div>
     </div>

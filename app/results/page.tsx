@@ -201,7 +201,12 @@ export default function ResultsPage() {
               <li>Protect <b>one</b> high area → schedule it.</li>
               <li>Re-run in 7 days and compare your LMI.</li>
             </ul>
-            <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {/* NEW BUTTON */}
+              <button className="btn primary" onClick={() => router.push("/next-steps")}>
+                Next Steps for you →
+              </button>
+
               <button className="btn" onClick={() => router.push("/survey")}>Retake survey</button>
               <button className="btn ghost" onClick={() => router.push("/")}>Home</button>
             </div>

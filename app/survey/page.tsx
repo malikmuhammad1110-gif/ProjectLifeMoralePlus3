@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Answer = { score?: number };
+type Answer = { score: number | null };
 type TimeRow = { category: string; hours: number; ri: number };
 
 const QUESTIONS = [
@@ -48,8 +48,9 @@ const DEFAULT_TIME: TimeRow[] = [
 export default function SurveyPage() {
   const router = useRouter();
 
+  // Start EVERY answer as null (unanswered).
   const [answers, setAnswers] = useState<Answer[]>(
-    Array.from({ length: 24 }, () => ({}))
+    Array.from({ length: 24 }, () => ({ score: null }))
   );
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
   const [ELI, setELI] = useState<number>(1);
@@ -63,14 +64,18 @@ export default function SurveyPage() {
   );
   const remaining = 168 - totalHours;
 
-  const answered = answers.filter(a => typeof a.score === "number").length;
-  const progress = Math.round((answered / QUESTIONS.length) * 100);
+  const answeredCount = answers.filter(a => typeof a.score === "number").length;
+  const progress = Math.round((answeredCount / QUESTIONS.length) * 100);
+  const allAnswered = answeredCount === QUESTIONS.length;
 
   const setScore = (i: number, v: number) => {
     const next = [...answers];
     next[i] = { score: v };
     setAnswers(next);
   };
+
+  const quickUseFive = (i: number) => setScore(i, 5);
+
   const setTime = (i: number, field: "hours" | "ri", v: number) => {
     const next = [...timeMap];
     next[i] = { ...next[i], [field]: v } as any;
@@ -102,6 +107,7 @@ export default function SurveyPage() {
       if (!res.ok) throw new Error(`API error (${res.status})`);
       const data = await res.json();
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
+      localStorage.setItem("LMI_INPUT", JSON.stringify({ answers, timeMap, ELI }));
       localStorage.setItem("lifeMoraleScore", String(data.finalLMI ?? ""));
       router.push("/results");
     } catch (e: any) {
@@ -118,6 +124,8 @@ export default function SurveyPage() {
       : remaining > 0
       ? `Allocate ${remaining} more`
       : `Over by ${-remaining}`;
+
+  const canCalculate = remaining === 0 && allAnswered && !loading;
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -136,7 +144,7 @@ export default function SurveyPage() {
             <div style={{ width: `${progress}%` }} />
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {progress}%
+            {progress}% ({answeredCount}/{QUESTIONS.length})
           </div>
         </div>
       </div>
@@ -150,8 +158,7 @@ export default function SurveyPage() {
           <div className="pill"><b>ELI</b> — Emotional Load Index (1–10; higher load = lower ceiling)</div>
         </div>
         <p className="muted" style={{ marginTop: 8 }}>
-          RI captures how each block of time leaves a lingering effect on your day.
-          ELI sets the overall ceiling for how high your morale can feel right now.
+          Sliders begin unanswered. Drag to set a score, or tap <b>Use 5</b> if 5 fits.
         </p>
       </div>
 
@@ -159,12 +166,16 @@ export default function SurveyPage() {
         {/* Questions */}
         <div className="card">
           <div className="section-title">
-            <span style={{ color: "var(--blue)" }}>•</span> 24 questions (1–10)
+            <span style={{ color: "var(--blue)" }}>•</span> 24 questions (confirm each)
           </div>
-          <p className="muted" style={{ marginTop: 4 }}>Keep it simple and honest.</p>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Each item must be set (drag or “Use 5”) for 100% progress.
+          </p>
 
           {QUESTIONS.map((q, i) => {
-            const val = answers[i].score ?? 5;
+            const current = answers[i].score; // null = unanswered
+            const displayVal = current ?? 5;  // show 5 visually, but it's not "set" until the user acts
+
             return (
               <div
                 key={i}
@@ -174,19 +185,59 @@ export default function SurveyPage() {
                   borderBottom: "1px dashed var(--border)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 700 }}>{i + 1}. {q}</div>
-                  <div className="pill">Score: {val}</div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 6,
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>
+                    {i + 1}. {q}
+                  </div>
+
+                  {current === null ? (
+                    <div className="kpi" style={{ gap: 6 }}>
+                      <span className="pill" style={{ color: "#6B7280" }}>Unanswered</span>
+                      <button
+                        className="btn"
+                        style={{ padding: "4px 10px" }}
+                        onClick={() => quickUseFive(i)}
+                        title="Confirm a 5 without dragging"
+                      >
+                        Use 5
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pill">Score: {current}</div>
+                  )}
                 </div>
-                <input
-                  className="slider"
-                  type="range"
-                  min={1}
-                  max={10}
-                  step={1}
-                  value={val}
-                  onChange={(e) => setScore(i, Number(e.target.value))}
-                />
+
+                {/* If unanswered, we render an "uncontrolled" slider that starts at 5.
+                    Once the user moves it, we commit to a controlled score. */}
+                {current === null ? (
+                  <input
+                    className="slider"
+                    type="range"
+                    min={1}
+                    max={10}
+                    step={1}
+                    defaultValue={5}
+                    onChange={(e) => setScore(i, Number(e.target.value))}
+                  />
+                ) : (
+                  <input
+                    className="slider"
+                    type="range"
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={current}
+                    onChange={(e) => setScore(i, Number(e.target.value))}
+                  />
+                )}
               </div>
             );
           })}
@@ -291,16 +342,22 @@ export default function SurveyPage() {
             </div>
           </div>
 
-          <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
+          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               className="btn primary"
               onClick={calculate}
-              disabled={loading || remaining !== 0}
-              title={remaining !== 0 ? "Allocate all 168 hours" : ""}
+              disabled={!canCalculate}
+              title={
+                !allAnswered
+                  ? "Answer all 24 questions"
+                  : remaining !== 0
+                  ? "Allocate all 168 hours"
+                  : ""
+              }
             >
               {loading ? "Calculating…" : "See my Life Morale"}
             </button>
-            {remaining !== 0 && (
+            {(!allAnswered || remaining !== 0) && (
               <button
                 className="btn ghost"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

@@ -48,12 +48,16 @@ const DEFAULT_TIME: TimeRow[] = [
 export default function SurveyPage() {
   const router = useRouter();
 
-  // Start EVERY answer as null (unanswered).
+  // Start EVERY answer as null (unanswered) so progress is accurate.
   const [answers, setAnswers] = useState<Answer[]>(
     Array.from({ length: 24 }, () => ({ score: null }))
   );
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
-  const [ELI, setELI] = useState<number>(1);
+
+  // ELI with positive possibility:
+  // 1..10 scale where 5 = neutral; <5 = emotional drag; >5 = positive tailwind
+  const [ELI, setELI] = useState<number>(5);
+
   const [crossLift, setCrossLift] = useState<boolean>(true);
   const [riMult, setRiMult] = useState<number>(1);
   const [calMax, setCalMax] = useState<number>(8.75);
@@ -73,7 +77,6 @@ export default function SurveyPage() {
     next[i] = { score: v };
     setAnswers(next);
   };
-
   const quickUseFive = (i: number) => setScore(i, 5);
 
   const setTime = (i: number, field: "hours" | "ri", v: number) => {
@@ -93,12 +96,16 @@ export default function SurveyPage() {
         answers,
         timeMap,
         ELI,
+        // These config hints let the backend (if it uses them) apply ELI both ways:
+        // 5 = neutral, <5 drag, >5 lift. Harmless if API ignores them.
         config: {
           calibration: { k: 1.936428228, max: calMax },
           ri: { globalMultiplier: riMult },
           crossLift: { enabled: crossLift, alpha: 20 },
+          eliModel: { center: 5, min: 1, max: 10, allowPositive: true },
         },
       };
+
       const res = await fetch("/api/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,9 +113,11 @@ export default function SurveyPage() {
       });
       if (!res.ok) throw new Error(`API error (${res.status})`);
       const data = await res.json();
+
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
       localStorage.setItem("LMI_INPUT", JSON.stringify({ answers, timeMap, ELI }));
       localStorage.setItem("lifeMoraleScore", String(data.finalLMI ?? ""));
+
       router.push("/results");
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");
@@ -149,16 +158,47 @@ export default function SurveyPage() {
         </div>
       </div>
 
-      {/* Rubric */}
+      {/* Rubric (expanded, human) */}
       <div className="card" style={{ background: "#f5fbff" }}>
         <div className="label">Rubric (read once)</div>
-        <div className="kpi">
-          <div className="pill"><b>LMI</b> — Life Morale Index (your final score)</div>
-          <div className="pill"><b>RI</b> — Residual Influence (1–10; 5 = neutral)</div>
-          <div className="pill"><b>ELI</b> — Emotional Load Index (1–10; higher load = lower ceiling)</div>
+
+        <div className="kpi" style={{ marginBottom: 8 }}>
+          <div className="pill"><b>LMI</b> — Life Morale Index</div>
+          <div className="pill"><b>RI</b> — Residual Influence</div>
+          <div className="pill"><b>ELI</b> — Emotional Load Index</div>
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          Sliders begin unanswered. Drag to set a score, or tap <b>Use 5</b> if 5 fits.
+
+        <p style={{ margin: "4px 0" }}>
+          <b>LMI</b> is your overall well-being snapshot. It balances how your time, habits, and mindset match what
+          actually fulfills you. It’s not a judgment—just clarity you can act on.
+        </p>
+
+        <p style={{ margin: "8px 0" }}>
+          <b>RI</b> is how much a part of your life <i>bleeds into the rest of your day</i>. If something drains or
+          energizes you beyond the moment—that’s RI.
+        </p>
+        <div className="card" style={{ background: "#fff", borderStyle: "dashed", marginTop: 6 }}>
+          <div className="label">RI examples</div>
+          <ul className="muted" style={{ margin: 0 }}>
+            <li>“Work’s been stressful, but gym time keeps me sane.” <i>(positive RI)</i></li>
+            <li>“Life’s good overall, but money stress keeps tagging along.” <i>(negative RI)</i></li>
+          </ul>
+        </div>
+
+        <p style={{ margin: "12px 0 4px" }}>
+          <b>ELI</b> is the overall emotional <i>weather</i> around you—the feeling that lingers no matter what you’re doing.
+          We use a 1–10 scale with <b>5 = neutral</b>. Scores <b>&lt;5</b> add a drag; scores <b>&gt;5</b> give a tailwind.
+        </p>
+        <div className="card" style={{ background: "#fff", borderStyle: "dashed", marginTop: 6 }}>
+          <div className="label">ELI examples</div>
+          <ul className="muted" style={{ margin: 0 }}>
+            <li>“Got a promotion—traffic can’t touch my mood this week.” <i>(ELI &gt; 5, positive lift)</i></li>
+            <li>“My breakup’s rough—even fun nights feel half-dim.” <i>(ELI &lt; 5, lingering drag)</i></li>
+          </ul>
+        </div>
+
+        <p className="muted" style={{ marginTop: 10 }}>
+          Tip: The goal isn’t a perfect 10. Small lifts (better sleep, less commute stress, more connection) change the math.
         </p>
       </div>
 
@@ -174,7 +214,7 @@ export default function SurveyPage() {
 
           {QUESTIONS.map((q, i) => {
             const current = answers[i].score; // null = unanswered
-            const displayVal = current ?? 5;  // show 5 visually, but it's not "set" until the user acts
+            const displayVal = current ?? 5;  // show 5 visually, but doesn't count until set
 
             return (
               <div
@@ -215,8 +255,7 @@ export default function SurveyPage() {
                   )}
                 </div>
 
-                {/* If unanswered, we render an "uncontrolled" slider that starts at 5.
-                    Once the user moves it, we commit to a controlled score. */}
+                {/* If unanswered, start at 5 but don't count until they move or tap 'Use 5' */}
                 {current === null ? (
                   <input
                     className="slider"
@@ -224,7 +263,7 @@ export default function SurveyPage() {
                     min={1}
                     max={10}
                     step={1}
-                    defaultValue={5}
+                    defaultValue={displayVal}
                     onChange={(e) => setScore(i, Number(e.target.value))}
                   />
                 ) : (
@@ -301,14 +340,14 @@ export default function SurveyPage() {
             <div className="label">Model</div>
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <label>
-                ELI (1–10)
+                ELI (1–10) — 5 = neutral, &lt;5 drag, &gt;5 lift
                 <input
                   className="input"
                   type="number"
                   min={1}
                   max={10}
                   value={ELI}
-                  onChange={(e) => setELI(Number(e.target.value || 1))}
+                  onChange={(e) => setELI(Number(e.target.value || 5))}
                 />
               </label>
               <label>

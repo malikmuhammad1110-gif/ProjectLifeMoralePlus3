@@ -103,6 +103,10 @@ export default function SurveyPage() {
       const data = await res.json();
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
       localStorage.setItem("lifeMoraleScore", String(data.finalLMI ?? ""));
+
+      // NEW: save a light snapshot so /next-steps can tailor tips
+      localStorage.setItem("LMI_INPUT", JSON.stringify({ answers, timeMap, ELI }));
+
       router.push("/results");
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");

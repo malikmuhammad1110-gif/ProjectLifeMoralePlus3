@@ -2,7 +2,79 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import LogoPLM from "@/components/LogoPLM";
 
+/** ------- Small UI helpers ------- */
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function parseDecimal(input: string) {
+  // Allow digits + a single dot, ignore others
+  const clean = input.replace(/[^0-9.]/g, "");
+  // If multiple dots, keep the first
+  const parts = clean.split(".");
+  const normalized = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : clean;
+  const n = parseFloat(normalized);
+  return isNaN(n) ? NaN : n;
+}
+
+/** Small inline Info tooltip */
+function InfoTip({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        aria-label={`Info: ${title}`}
+        onClick={() => setOpen((v) => !v)}
+        onBlur={() => setOpen(false)}
+        className="pill"
+        style={{
+          padding: "2px 6px",
+          lineHeight: 1,
+          marginLeft: 6,
+          cursor: "pointer",
+          fontWeight: 800,
+          fontSize: 12,
+        }}
+      >
+        i
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label={title}
+          className="card"
+          style={{
+            position: "absolute",
+            zIndex: 20,
+            top: "125%",
+            left: 0,
+            minWidth: 260,
+            maxWidth: 320,
+            background: "#fff",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,.08)",
+            padding: 12,
+          }}
+        >
+          <div className="label" style={{ marginBottom: 6 }}>{title}</div>
+          <div className="muted" style={{ fontSize: 13 }}>{children}</div>
+        </div>
+      )}
+    </span>
+  );
+}
+
+/** ------- Types & Data ------- */
 type Answer = { score?: number };
 type TimeRow = { category: string; hours: number; ri: number };
 
@@ -45,15 +117,19 @@ const DEFAULT_TIME: TimeRow[] = [
   { category: "Other", hours: 0, ri: 5 },
 ];
 
+/** ------- Page ------- */
 export default function SurveyPage() {
   const router = useRouter();
 
   const [answers, setAnswers] = useState<Answer[]>(Array.from({ length: 24 }, () => ({})));
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
+
+  // ELI with positive possibility (5 = neutral; <5 drag; >5 lift)
   const [ELI, setELI] = useState<number>(5);
   const [crossLift, setCrossLift] = useState<boolean>(true);
   const [riMult, setRiMult] = useState<number>(1);
   const [calMax, setCalMax] = useState<number>(8.75);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +163,7 @@ export default function SurveyPage() {
           calibration: { k: 1.936428228, max: calMax },
           ri: { globalMultiplier: riMult },
           crossLift: { enabled: crossLift, alpha: 20 },
+          eliModel: { center: 5, min: 1, max: 10, allowPositive: true },
         },
       };
       const res = await fetch("/api/score", {
@@ -114,12 +191,15 @@ export default function SurveyPage() {
     <div className="grid" style={{ gap: 18 }}>
       {/* Banner */}
       <div className="banner">
-        <div style={{ flex: 1 }}>
-          <div className="badge">Life Morale Survey</div>
-          <h1 style={{ margin: "6px 0 0" }}>How’s life, really?</h1>
-          <p className="muted" style={{ margin: "6px 0 0" }}>
-            Quick sliders. Honest answers. Big clarity.
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LogoPLM size={36} wordmark />
+          <div>
+            <div className="badge">Life Morale Survey</div>
+            <h1 style={{ margin: "6px 0 0" }}>How’s life, really?</h1>
+            <p className="muted" style={{ margin: "6px 0 0" }}>
+              Quick sliders. Honest answers. Big clarity.
+            </p>
+          </div>
         </div>
         <div className="card" style={{ textAlign: "center" }}>
           <div className="label">Progress</div>
@@ -132,17 +212,34 @@ export default function SurveyPage() {
         </div>
       </div>
 
-      {/* Rubric */}
+      {/* Rubric with InfoTips */}
       <div className="card" style={{ background: "#f5fbff" }}>
-        <div className="label">Rubric (read once)</div>
-        <div className="kpi">
-          <div className="pill"><b>LMI</b> — Life Morale Index (your final score)</div>
-          <div className="pill"><b>RI</b> — Residual Influence (1–10; 5 = neutral)</div>
-          <div className="pill"><b>ELI</b> — Emotional Load Index (1–10; higher = tailwind)</div>
+        <div className="label">Rubric</div>
+        <div className="kpi" style={{ marginBottom: 8 }}>
+          <div className="pill">
+            <b>LMI</b> — Life Morale Index
+            <InfoTip title="LMI — Life Morale Index">
+              Your overall well-being snapshot. It balances how your time, habits, and mindset match what actually fulfills you.
+              It’s not a judgment—just clarity you can act on.
+            </InfoTip>
+          </div>
+          <div className="pill">
+            <b>RI</b> — Residual Influence
+            <InfoTip title="RI — Residual Influence">
+              How much something <i>bleeds into the rest of your day</i>. If a block of time drains or energizes you beyond the moment,
+              that carry-over effect is RI. E.g., “Work was rough, but the gym lifted my mood” (positive RI).
+            </InfoTip>
+          </div>
+          <div className="pill">
+            <b>ELI</b> — Emotional Load Index
+            <InfoTip title="ELI — Emotional Load Index">
+              Your current emotional “weather.” We use 1–10 where <b>5 = neutral</b>. Below 5 adds a drag; above 5 creates a tailwind.
+              E.g., “Got a promotion—traffic can’t touch my mood” (ELI > 5).
+            </InfoTip>
+          </div>
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          RI captures how much a block of time affects your day after it’s done — the “afterglow” or “hangover” effect.
-          ELI reflects your overall emotional weather: 5 = neutral, above = positive tailwind, below = emotional drag.
+        <p className="muted" style={{ marginTop: 6 }}>
+          Sliders start blank—move each to set your score. Time map uses hours per week and RI (1–10; 5 = neutral).
         </p>
       </div>
 
@@ -193,7 +290,7 @@ export default function SurveyPage() {
                   {row.category !== "Sleep" && <span className="badge">awake</span>}
                 </div>
 
-                {/* HOURS - numeric keypad */}
+                {/* HOURS - numeric keypad (integers 0..168) */}
                 <div>
                   <input
                     className="input"
@@ -207,14 +304,14 @@ export default function SurveyPage() {
                     onChange={(e) => {
                       const digits = e.target.value.replace(/\D+/g, "");
                       const n = digits === "" ? 0 : parseInt(digits, 10);
-                      const nextVal = Math.max(0, Math.min(168, isNaN(n) ? 0 : n));
+                      const nextVal = clamp(isNaN(n) ? 0 : n, 0, 168);
                       setTime(i, "hours", nextVal);
                     }}
                   />
                   <div className="muted" style={{ fontSize: 12 }}>hrs</div>
                 </div>
 
-                {/* RI - numeric keypad */}
+                {/* RI - numeric keypad (1..10, blank allowed) */}
                 <div>
                   <input
                     className="input"
@@ -228,7 +325,7 @@ export default function SurveyPage() {
                     onChange={(e) => {
                       const digits = e.target.value.replace(/\D+/g, "");
                       let n = digits === "" ? 0 : parseInt(digits, 10);
-                      if (n !== 0) n = Math.max(1, Math.min(10, isNaN(n) ? 5 : n));
+                      if (n !== 0) n = clamp(isNaN(n) ? 5 : n, 1, 10);
                       setTime(i, "ri", n);
                     }}
                   />
@@ -249,40 +346,62 @@ export default function SurveyPage() {
             {hoursText}
           </div>
 
+          {/* Model (ELI / Calibration / RI Multiplier) — numeric keypad too */}
           <div className="card" style={{ marginTop: 12, background: "#f5fbff" }}>
             <div className="label">Model</div>
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <label>
-                ELI (1–10)
+                ELI (1–10) — 5 = neutral, &lt;5 drag, &gt;5 lift
                 <input
                   className="input"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={ELI}
-                  onChange={(e) => setELI(Number(e.target.value || 5))}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="5"
+                  value={String(ELI)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D+/g, "");
+                    const n = digits === "" ? 5 : parseInt(digits, 10);
+                    setELI(clamp(isNaN(n) ? 5 : n, 1, 10));
+                  }}
                 />
               </label>
+
               <label>
-                Calibration max
+                Calibration max (10 → …)
                 <input
                   className="input"
-                  type="number"
-                  step={0.05}
-                  value={calMax}
-                  onChange={(e) => setCalMax(Number(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="8.75"
+                  value={String(calMax)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const n = parseDecimal(e.target.value);
+                    const safe = isNaN(n) ? 8.75 : n;
+                    setCalMax(clamp(safe, 6, 10)); // keep in a sensible range
+                  }}
                 />
               </label>
+
               <label>
                 RI multiplier
                 <input
                   className="input"
-                  type="number"
-                  step={0.1}
-                  value={riMult}
-                  onChange={(e) => setRiMult(Number(e.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="1"
+                  value={String(riMult)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const n = parseDecimal(e.target.value);
+                    const safe = isNaN(n) ? 1 : n;
+                    setRiMult(clamp(safe, 0.1, 3)); // guardrails
+                  }}
                 />
               </label>
+
               <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <input
                   type="checkbox"

@@ -1,49 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoPLM from "@/components/LogoPLM";
 
-/* Helpers */
-function clamp(n: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, n)); }
-function parseDecimal(input: string) {
-  const clean = input.replace(/[^0-9.]/g, "");
-  const parts = clean.split(".");
-  const normalized = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : clean;
-  const n = parseFloat(normalized);
-  return isNaN(n) ? NaN : n;
-}
-
-/* Small inline Info tooltip */
-function InfoTip(props: { title: string; children: any }) {
-  const { title, children } = props;
-  const [open, setOpen] = useState(false);
-  return (
-    <span style={{ position: "relative", display: "inline-block" }}>
-      <button
-        type="button"
-        aria-label={`Info: ${title}`}
-        onClick={() => setOpen(v => !v)}
-        onBlur={() => setOpen(false)}
-        className="pill"
-        style={{ padding: "2px 6px", lineHeight: 1, marginLeft: 6, cursor: "pointer", fontWeight: 800, fontSize: 12 }}
-      >i</button>
-      {open && (
-        <div
-          role="dialog"
-          aria-label={title}
-          className="card"
-          style={{ position: "absolute", zIndex: 20, top: "125%", left: 0, minWidth: 260, maxWidth: 320, background: "#fff" }}
-        >
-          <div className="label" style={{ marginBottom: 6 }}>{title}</div>
-          <div className="muted" style={{ fontSize: 13 }}>{children}</div>
-        </div>
-      )}
-    </span>
-  );
-}
-
-/* Types & Data */
 type Answer = { score?: number };
 type TimeRow = { category: string; hours: number; ri: number };
 
@@ -88,68 +48,74 @@ const DEFAULT_TIME: TimeRow[] = [
 
 export default function SurveyPage() {
   const router = useRouter();
-
-  const [answers, setAnswers] = useState<Answer[]>(Array.from({ length: 24 }, () => ({})));
+  const [answers, setAnswers] = useState<Answer[]>(Array.from({ length: 24 }, () => ({ score: 0 })));
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
-  const [ELI, setELI] = useState<number>(5);
+  const [ELI, setELI] = useState<number>(1);
   const [crossLift, setCrossLift] = useState<boolean>(true);
   const [riMult, setRiMult] = useState<number>(1);
   const [calMax, setCalMax] = useState<number>(8.75);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const totalHours = useMemo(() => timeMap.reduce((a, b) => a + (Number(b.hours) || 0), 0), [timeMap]);
   const remaining = 168 - totalHours;
-  const answered = answers.filter(a => typeof a.score === "number").length;
+  const answered = answers.filter(a => typeof a.score === "number" && a.score > 0).length;
   const progress = Math.round((answered / QUESTIONS.length) * 100);
 
-  /* handlers */
-  const setScore = (i: number, v: number) => { const next = [...answers]; next[i] = { score: v }; setAnswers(next); };
+  const setScore = (i: number, v: number) => {
+    const next = [...answers];
+    next[i] = { score: v };
+    setAnswers(next);
+  };
   const setTime = (i: number, field: "hours" | "ri", v: number) => {
-    const next = [...timeMap]; next[i] = { ...next[i], [field]: v } as any; setTimeMap(next);
+    const next = [...timeMap];
+    next[i] = { ...next[i], [field]: v };
+    setTimeMap(next);
   };
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   async function calculate() {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const payload = {
-        answers, timeMap, ELI,
+        answers,
+        timeMap,
+        ELI,
         config: {
           calibration: { k: 1.936428228, max: calMax },
           ri: { globalMultiplier: riMult },
           crossLift: { enabled: crossLift, alpha: 20 },
-          eliModel: { center: 5, min: 1, max: 10, allowPositive: true },
         },
       };
-      const res = await fetch("/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const res = await fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       if (!res.ok) throw new Error(`API error (${res.status})`);
       const data = await res.json();
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
-      localStorage.setItem("LMI_INPUT", JSON.stringify({ answers, timeMap, ELI }));
+      localStorage.setItem("LMI_INPUT", JSON.stringify({ ELI }));
       router.push("/results");
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const hoursText = remaining === 0 ? "✅ 168/168 — Ready"
-                   : remaining > 0 ? `Allocate ${remaining} more`
-                   : `Over by ${-remaining}`;
+  const hoursText =
+    remaining === 0 ? "✅ 168/168 — Ready" : remaining > 0 ? `Allocate ${remaining} more` : `Over by ${-remaining}`;
 
   return (
-    <div className="grid" style={{ gap: 18 }}>
-      {/* Banner */}
-      <div className="banner">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <LogoPLM size={36} wordmark />
-          <div>
-            <div className="badge">Life Morale Survey</div>
-            <h1 style={{ margin: "6px 0 0" }}>How’s life, really?</h1>
-            <p className="muted" style={{ margin: "6px 0 0" }}>
-              Quick sliders. Honest answers. Big clarity.
-            </p>
-          </div>
+    <div className="main grid" style={{ gap: 20 }}>
+      {/* Header */}
+      <div className="header">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LogoPLM size={40} />
+          <h1 style={{ margin: 0 }}>Life Morale Survey</h1>
         </div>
         <div className="card" style={{ textAlign: "center" }}>
           <div className="label">Progress</div>
@@ -158,54 +124,41 @@ export default function SurveyPage() {
         </div>
       </div>
 
-      {/* Rubric + info tips */}
-      <div className="card" style={{ background: "#f5fbff" }}>
-        <div className="label">Rubric</div>
-        <div className="kpi" style={{ marginBottom: 8 }}>
-          <div className="pill">
-            <b>LMI</b> — Life Morale Index
-            <InfoTip title="LMI — Life Morale Index">
-              Your overall well-being snapshot. It balances how your time, habits, and mindset match what actually fulfills you.
-              It’s not a judgment—just clarity you can act on.
-            </InfoTip>
-          </div>
-          <div className="pill">
-            <b>RI</b> — Residual Influence
-            <InfoTip title="RI — Residual Influence">
-              How much something <i>bleeds into the rest of your day</i>. If a block of time drains or energizes you beyond the moment,
-              that carry-over effect is RI. E.g., “Work was rough, but the gym lifted my mood” (positive RI).
-            </InfoTip>
-          </div>
-          <div className="pill">
-            <b>ELI</b> — Emotional Load Index
-            <InfoTip title="ELI — Emotional Load Index">
-              Your current emotional “weather.” We use 1–10 where <b>5 = neutral</b>. Below 5 adds a drag; above 5 creates a tailwind.
-            </InfoTip>
-          </div>
+      {/* Rubric */}
+      <div className="card" style={{ background: "var(--panelTint)" }}>
+        <div className="label">Rubric
+          <span className="info">
+            <span className="dot">i</span>
+            <span className="tip">
+              <b>LMI</b> — Life Morale Index (final composite score).<br/>
+              <b>RI</b> — Residual Influence: how each activity’s mood lingers after doing it.<br/>
+              <b>ELI</b> — Emotional Load Index: your week’s general emotional climate (1 = drag, 10 = tailwind).
+            </span>
+          </span>
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
-          Sliders start blank—move each to set your score. Time map uses hours/week and RI (1–10; 5 = neutral).
+          Quick sliders. Honest answers. Big clarity. You’ll adjust hours, energy, and feelings.
         </p>
       </div>
 
       <div className="grid cols-2">
         {/* Questions */}
         <div className="card">
-          <div className="section-title"><span style={{ color: "var(--blue)" }}>•</span> 24 questions (1–10)</div>
-          <p className="muted" style={{ marginTop: 4 }}>Move each slider to give your honest score.</p>
-
+          <h3>24 Questions (1–10)</h3>
           {QUESTIONS.map((q, i) => {
             const val = answers[i].score ?? 0;
             return (
-              <div key={i} style={{ margin: "14px 0 18px", paddingBottom: 10, borderBottom: "1px dashed var(--border)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 700 }}>{i + 1}. {q}</div>
+              <div key={i} style={{ margin: "16px 0 10px", paddingBottom: 8, borderBottom: "1px dashed var(--border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 600 }}>{i + 1}. {q}</div>
                   <div className="pill">Score: {val}</div>
                 </div>
                 <input
                   className="slider"
                   type="range"
-                  min={1} max={10} step={1}
+                  min={0}
+                  max={10}
+                  step={1}
                   value={val}
                   onChange={(e) => setScore(i, Number(e.target.value))}
                 />
@@ -214,48 +167,38 @@ export default function SurveyPage() {
           })}
         </div>
 
-        {/* Time map + Model */}
+        {/* Time Map + Model */}
         <div className="card">
-          <div className="section-title"><span style={{ color: "var(--teal)" }}>•</span> 168-hour time map</div>
-          <p className="muted" style={{ marginTop: 4 }}>Tap to edit — numeric keypad will appear on phones.</p>
-
+          <h3>168-hour time map</h3>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Hours per week + RI (1–10; 5 = neutral)
+          </p>
           <div style={{ display: "grid", gap: 10 }}>
             {timeMap.map((row, i) => (
               <div key={row.category} className="row">
-                <div>
-                  <b>{row.category}</b> {row.category !== "Sleep" && <span className="badge">awake</span>}
-                </div>
-
-                {/* HOURS -> numeric keypad */}
+                <div><b>{row.category}</b>{row.category !== "Sleep" && <span className="badge">awake</span>}</div>
                 <div>
                   <input
                     className="input"
-                    type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="next" placeholder="0"
-                    value={row.hours === 0 ? "" : String(row.hours)}
-                    onFocus={(e) => e.currentTarget.select()}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/\D+/g, "");
-                      const n = digits === "" ? 0 : parseInt(digits, 10);
-                      const nextVal = clamp(isNaN(n) ? 0 : n, 0, 168);
-                      setTime(i, "hours", nextVal);
-                    }}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    type="number"
+                    min={0}
+                    value={row.hours}
+                    onChange={(e) => setTime(i, "hours", Number(e.target.value || 0))}
                   />
                   <div className="muted" style={{ fontSize: 12 }}>hrs</div>
                 </div>
-
-                {/* RI -> numeric keypad */}
                 <div>
                   <input
                     className="input"
-                    type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="next" placeholder="5"
-                    value={row.ri === 0 ? "" : String(row.ri)}
-                    onFocus={(e) => e.currentTarget.select()}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/\D+/g, "");
-                      let n = digits === "" ? 0 : parseInt(digits, 10);
-                      if (n !== 0) n = clamp(isNaN(n) ? 5 : n, 1, 10);
-                      setTime(i, "ri", n);
-                    }}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={row.ri}
+                    onChange={(e) => setTime(i, "ri", Number(e.target.value || 5))}
                   />
                   <div className="muted" style={{ fontSize: 12 }}>RI</div>
                 </div>
@@ -263,69 +206,78 @@ export default function SurveyPage() {
             ))}
           </div>
 
-          <div style={{ marginTop: 10, fontWeight: 700, color: remaining === 0 ? "var(--teal)" : remaining > 0 ? "var(--amber)" : "var(--rose)" }}>
-            {hoursText}
-          </div>
+          <div style={{
+            marginTop: 10,
+            fontWeight: 700,
+            color: remaining === 0 ? "var(--teal)" : remaining > 0 ? "var(--amber)" : "var(--rose)"
+          }}>{hoursText}</div>
 
-          {/* Model */}
-          <div className="card" style={{ marginTop: 12, background: "#f5fbff" }}>
-            <div className="label">Model</div>
+          {/* Model section */}
+          <div className="card" style={{ marginTop: 14, background: "#f5fbff" }}>
+            <div className="label">
+              Model parameters
+              <span className="info">
+                <span className="dot">i</span>
+                <span className="tip">
+                  <b>ELI</b> adjusts your total morale ceiling.<br/>
+                  <b>RI multiplier</b> influences how much energy carries across your week.<br/>
+                  <b>Cross-lift</b> lets strong areas uplift weaker ones.
+                </span>
+              </span>
+            </div>
+
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <label>
-                ELI (1–10) — 5 = neutral, &lt;5 drag, &gt;5 lift
+                ELI (1–10)
                 <input
                   className="input"
-                  type="text" inputMode="numeric" pattern="[0-9]*" placeholder="5"
-                  value={String(ELI)}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D+/g, "");
-                    const n = digits === "" ? 5 : parseInt(digits, 10);
-                    setELI(clamp(isNaN(n) ? 5 : n, 1, 10));
-                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={ELI}
+                  onChange={(e) => setELI(Number(e.target.value || 1))}
                 />
               </label>
-
               <label>
-                Calibration max (10 → …)
+                Calibration max
                 <input
                   className="input"
-                  type="text" inputMode="decimal" placeholder="8.75"
-                  value={String(calMax)}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onChange={(e) => {
-                    const n = parseDecimal(e.target.value);
-                    const safe = isNaN(n) ? 8.75 : n;
-                    setCalMax(clamp(safe, 6, 10));
-                  }}
+                  type="number"
+                  step={0.05}
+                  value={calMax}
+                  onChange={(e) => setCalMax(Number(e.target.value))}
                 />
               </label>
-
               <label>
                 RI multiplier
                 <input
                   className="input"
-                  type="text" inputMode="decimal" placeholder="1"
-                  value={String(riMult)}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onChange={(e) => {
-                    const n = parseDecimal(e.target.value);
-                    const safe = isNaN(n) ? 1 : n;
-                    setRiMult(clamp(safe, 0.1, 3));
-                  }}
+                  type="number"
+                  step={0.1}
+                  value={riMult}
+                  onChange={(e) => setRiMult(Number(e.target.value))}
                 />
               </label>
-
-              <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <input type="checkbox" checked={crossLift} onChange={(e) => setCrossLift(e.target.checked)} />
-                Cross-lift (let strong areas lift weak)
+              <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={crossLift}
+                  onChange={(e) => setCrossLift(e.target.checked)}
+                />
+                Cross-lift (active)
               </label>
             </div>
           </div>
 
-          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="btn primary" onClick={calculate} disabled={loading || remaining !== 0}
-              title={remaining !== 0 ? "Allocate all 168 hours" : ""}>
+          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              className="btn primary"
+              onClick={calculate}
+              disabled={loading || remaining !== 0}
+              title={remaining !== 0 ? "Allocate all 168 hours" : ""}
+            >
               {loading ? "Calculating…" : "See my Life Morale"}
             </button>
             {remaining !== 0 && (

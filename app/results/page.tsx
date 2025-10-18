@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import LogoPLM from "@/components/LogoPLM";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -9,7 +10,6 @@ export default function ResultsPage() {
   const [input, setInput] = useState<{ ELI?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Load saved result + input (for ELI) from localStorage ---
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -25,7 +25,6 @@ export default function ResultsPage() {
     }
   }, []);
 
-  // --- Demo helper (only shown if there's no data) ---
   function loadDemo() {
     const demo = {
       finalLMI: 6.95,
@@ -46,7 +45,6 @@ export default function ResultsPage() {
     setResult(demo);
   }
 
-  // --- Helpers ---
   function band(score: number) {
     if (score >= 7.5) return { label: "High", color: "var(--green)" };
     if (score >= 6.0) return { label: "Solid", color: "var(--primaryA)" };
@@ -54,17 +52,13 @@ export default function ResultsPage() {
     return { label: "Low", color: "var(--rose)" };
   }
 
-  const MAX = 8.75; // calibrated maximum
+  const MAX = 8.75;
   const final = typeof result?.finalLMI === "number" ? result.finalLMI : 0;
   const raw = typeof result?.rawLMS === "number" ? result.rawLMS : 0;
   const riAdj = typeof result?.riAdjusted === "number" ? result.riAdjusted : 0;
-  const pct = useMemo(
-    () => Math.round((Math.max(0, Math.min(final, MAX)) / MAX) * 100),
-    [final]
-  );
+  const pct = useMemo(() => Math.round((Math.max(0, Math.min(final, MAX)) / MAX) * 100), [final]);
   const b = useMemo(() => band(final), [final]);
 
-  // A tiny question bank for labels—indexes 0..23
   const QUESTIONS = [
     "Life direction / sense of trajectory",
     "Alignment with personal values",
@@ -94,27 +88,26 @@ export default function ResultsPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      {/* No data / error state */}
       {!result && (
         <div className="card">
           <h2>No results yet</h2>
           <p className="muted">Take the survey to see your Life Morale.</p>
           {error && <p style={{ color: "var(--rose)" }}>Error: {error}</p>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="btn primary" onClick={() => router.push("/survey")}>
-              Start survey
-            </button>
+            <button className="btn primary" onClick={() => router.push("/survey")}>Start survey</button>
             <button className="btn" onClick={loadDemo}>Load demo result</button>
           </div>
         </div>
       )}
 
-      {/* KPIs */}
       {result && (
         <>
           <div className="card" style={{ background: "linear-gradient(135deg,#E9F9F3,#F0FFFA)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <h1 style={{ marginTop: 0, marginBottom: 0 }}>Your Life Morale</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <LogoPLM size={32} />
+                <h1 style={{ margin: 0 }}>Your Life Morale</h1>
+              </div>
               <button className="btn" onClick={() => router.push("/survey")}>Retake survey</button>
             </div>
 
@@ -125,7 +118,8 @@ export default function ResultsPage() {
               <div className="pill" style={{ color: b.color }}><b>Status:</b> {b.label}</div>
               {typeof input?.ELI === "number" && (
                 <div className="pill">
-                  <b>ELI:</b> {input.ELI} <span className="muted" style={{ marginLeft: 6 }}>
+                  <b>ELI:</b> {input.ELI}
+                  <span className="muted" style={{ marginLeft: 6 }}>
                     {input.ELI === 5 ? "neutral" : input.ELI > 5 ? "tailwind" : "drag"}
                   </span>
                 </div>
@@ -133,11 +127,11 @@ export default function ResultsPage() {
             </div>
 
             <p className="muted" style={{ marginTop: 8, fontSize: 14 }}>
-              Small shifts, big lift: pick one low area to nudge up this week and keep fueling one high area you love.
+              Small shifts, big lift: pick one low area to nudge this week and keep fueling one high area you love.
             </p>
           </div>
 
-          {/* Gauge (brand greens) */}
+          {/* Gauge */}
           <div className="card">
             <div className="label">Gauge</div>
             <div style={{ marginTop: 4 }}>
@@ -214,16 +208,16 @@ export default function ResultsPage() {
             </div>
           </div>
 
-          {/* Quick RI/ELI refresher */}
+          {/* Quick refresher */}
           <div className="card" style={{ background: "#F8FFFD" }}>
-            <div className="label">What RI & ELI mean (fast)</div>
+            <div className="label">RI & ELI (fast)</div>
             <ul style={{ marginTop: 6 }}>
-              <li><b>RI</b> — Residual Influence: how much something <i>carries over</i> into the rest of your day (can drain or lift).</li>
+              <li><b>RI</b> — Residual Influence: how much something carries over into the rest of your day (drain or lift).</li>
               <li><b>ELI</b> — Emotional Load Index: the overall “emotional weather.” <b>5 = neutral</b>; below = drag, above = tailwind.</li>
             </ul>
           </div>
 
-            {/* Actions */}
+          {/* Actions */}
           <div className="card">
             <div className="label">Next steps</div>
             <ul style={{ margin: "8px 0" }}>

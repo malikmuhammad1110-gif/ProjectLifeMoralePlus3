@@ -22,7 +22,7 @@ export default function LogoPLM({
           </linearGradient>
         </defs>
         <circle cx="32" cy="32" r="30" fill="url(#plmG)" opacity="0.15" />
-        {/* Sharper lifeline with miter joints */}
+        {/* Sharper lifeline */}
         <path
           d="M8 40 L18 40 L22 28 L28 46 L34 18 L38 32 L56 32"
           fill="none"
@@ -31,7 +31,6 @@ export default function LogoPLM({
           strokeLinejoin="miter"
           strokeLinecap="round"
         />
-        {/* PLM+ */}
         <text x="16" y="56" fontSize="12" fontWeight="800" fill="#10B981">PLM+</text>
       </svg>
       {wordmark && (

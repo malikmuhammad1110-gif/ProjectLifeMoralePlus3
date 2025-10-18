@@ -1,70 +1,39 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoPLM from "@/components/LogoPLM";
 
-/** ------- Small UI helpers ------- */
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n));
-}
-
+/* Helpers */
+function clamp(n: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, n)); }
 function parseDecimal(input: string) {
-  // Allow digits + a single dot, ignore others
   const clean = input.replace(/[^0-9.]/g, "");
-  // If multiple dots, keep the first
   const parts = clean.split(".");
   const normalized = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : clean;
   const n = parseFloat(normalized);
   return isNaN(n) ? NaN : n;
 }
 
-/** Small inline Info tooltip */
-function InfoTip({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+/* Small inline Info tooltip */
+function InfoTip(props: { title: string; children: any }) {
+  const { title, children } = props;
   const [open, setOpen] = useState(false);
   return (
     <span style={{ position: "relative", display: "inline-block" }}>
       <button
         type="button"
         aria-label={`Info: ${title}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(v => !v)}
         onBlur={() => setOpen(false)}
         className="pill"
-        style={{
-          padding: "2px 6px",
-          lineHeight: 1,
-          marginLeft: 6,
-          cursor: "pointer",
-          fontWeight: 800,
-          fontSize: 12,
-        }}
-      >
-        i
-      </button>
+        style={{ padding: "2px 6px", lineHeight: 1, marginLeft: 6, cursor: "pointer", fontWeight: 800, fontSize: 12 }}
+      >i</button>
       {open && (
         <div
           role="dialog"
           aria-label={title}
           className="card"
-          style={{
-            position: "absolute",
-            zIndex: 20,
-            top: "125%",
-            left: 0,
-            minWidth: 260,
-            maxWidth: 320,
-            background: "#fff",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0,0,0,.08)",
-            padding: 12,
-          }}
+          style={{ position: "absolute", zIndex: 20, top: "125%", left: 0, minWidth: 260, maxWidth: 320, background: "#fff" }}
         >
           <div className="label" style={{ marginBottom: 6 }}>{title}</div>
           <div className="muted" style={{ fontSize: 13 }}>{children}</div>
@@ -74,7 +43,7 @@ function InfoTip({
   );
 }
 
-/** ------- Types & Data ------- */
+/* Types & Data */
 type Answer = { score?: number };
 type TimeRow = { category: string; hours: number; ri: number };
 
@@ -117,48 +86,34 @@ const DEFAULT_TIME: TimeRow[] = [
   { category: "Other", hours: 0, ri: 5 },
 ];
 
-/** ------- Page ------- */
 export default function SurveyPage() {
   const router = useRouter();
 
   const [answers, setAnswers] = useState<Answer[]>(Array.from({ length: 24 }, () => ({})));
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
-
-  // ELI with positive possibility (5 = neutral; <5 drag; >5 lift)
   const [ELI, setELI] = useState<number>(5);
   const [crossLift, setCrossLift] = useState<boolean>(true);
   const [riMult, setRiMult] = useState<number>(1);
   const [calMax, setCalMax] = useState<number>(8.75);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const totalHours = useMemo(() => timeMap.reduce((a, b) => a + (Number(b.hours) || 0), 0), [timeMap]);
   const remaining = 168 - totalHours;
-
-  const answered = answers.filter((a) => typeof a.score === "number").length;
+  const answered = answers.filter(a => typeof a.score === "number").length;
   const progress = Math.round((answered / QUESTIONS.length) * 100);
 
-  const setScore = (i: number, v: number) => {
-    const next = [...answers];
-    next[i] = { score: v };
-    setAnswers(next);
-  };
-
+  /* handlers */
+  const setScore = (i: number, v: number) => { const next = [...answers]; next[i] = { score: v }; setAnswers(next); };
   const setTime = (i: number, field: "hours" | "ri", v: number) => {
-    const next = [...timeMap];
-    next[i] = { ...next[i], [field]: v } as any;
-    setTimeMap(next);
+    const next = [...timeMap]; next[i] = { ...next[i], [field]: v } as any; setTimeMap(next);
   };
 
   async function calculate() {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const payload = {
-        answers,
-        timeMap,
-        ELI,
+        answers, timeMap, ELI,
         config: {
           calibration: { k: 1.936428228, max: calMax },
           ri: { globalMultiplier: riMult },
@@ -166,11 +121,7 @@ export default function SurveyPage() {
           eliModel: { center: 5, min: 1, max: 10, allowPositive: true },
         },
       };
-      const res = await fetch("/api/score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch("/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`API error (${res.status})`);
       const data = await res.json();
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
@@ -179,13 +130,12 @@ export default function SurveyPage() {
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  const hoursText =
-    remaining === 0 ? "✅ 168/168 — Ready" : remaining > 0 ? `Allocate ${remaining} more` : `Over by ${-remaining}`;
+  const hoursText = remaining === 0 ? "✅ 168/168 — Ready"
+                   : remaining > 0 ? `Allocate ${remaining} more`
+                   : `Over by ${-remaining}`;
 
   return (
     <div className="grid" style={{ gap: 18 }}>
@@ -203,16 +153,12 @@ export default function SurveyPage() {
         </div>
         <div className="card" style={{ textAlign: "center" }}>
           <div className="label">Progress</div>
-          <div className="progress">
-            <div style={{ width: `${progress}%` }} />
-          </div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {progress}%
-          </div>
+          <div className="progress"><div style={{ width: `${progress}%` }} /></div>
+          <div className="muted" style={{ marginTop: 6 }}>{progress}%</div>
         </div>
       </div>
 
-      {/* Rubric with InfoTips */}
+      {/* Rubric + info tips */}
       <div className="card" style={{ background: "#f5fbff" }}>
         <div className="label">Rubric</div>
         <div className="kpi" style={{ marginBottom: 8 }}>
@@ -234,21 +180,18 @@ export default function SurveyPage() {
             <b>ELI</b> — Emotional Load Index
             <InfoTip title="ELI — Emotional Load Index">
               Your current emotional “weather.” We use 1–10 where <b>5 = neutral</b>. Below 5 adds a drag; above 5 creates a tailwind.
-              E.g., “Got a promotion—traffic can’t touch my mood” (ELI &gt; 5).
             </InfoTip>
           </div>
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
-          Sliders start blank—move each to set your score. Time map uses hours per week and RI (1–10; 5 = neutral).
+          Sliders start blank—move each to set your score. Time map uses hours/week and RI (1–10; 5 = neutral).
         </p>
       </div>
 
       <div className="grid cols-2">
         {/* Questions */}
         <div className="card">
-          <div className="section-title">
-            <span style={{ color: "var(--blue)" }}>•</span> 24 questions (1–10)
-          </div>
+          <div className="section-title"><span style={{ color: "var(--blue)" }}>•</span> 24 questions (1–10)</div>
           <p className="muted" style={{ marginTop: 4 }}>Move each slider to give your honest score.</p>
 
           {QUESTIONS.map((q, i) => {
@@ -262,9 +205,7 @@ export default function SurveyPage() {
                 <input
                   className="slider"
                   type="range"
-                  min={1}
-                  max={10}
-                  step={1}
+                  min={1} max={10} step={1}
                   value={val}
                   onChange={(e) => setScore(i, Number(e.target.value))}
                 />
@@ -273,32 +214,23 @@ export default function SurveyPage() {
           })}
         </div>
 
-        {/* Time Map & Model */}
+        {/* Time map + Model */}
         <div className="card">
-          <div className="section-title">
-            <span style={{ color: "var(--teal)" }}>•</span> 168-hour time map
-          </div>
-          <p className="muted" style={{ marginTop: 4 }}>
-            Tap to edit — numeric keypad will appear on phones.
-          </p>
+          <div className="section-title"><span style={{ color: "var(--teal)" }}>•</span> 168-hour time map</div>
+          <p className="muted" style={{ marginTop: 4 }}>Tap to edit — numeric keypad will appear on phones.</p>
 
           <div style={{ display: "grid", gap: 10 }}>
             {timeMap.map((row, i) => (
               <div key={row.category} className="row">
                 <div>
-                  <b>{row.category}</b>{" "}
-                  {row.category !== "Sleep" && <span className="badge">awake</span>}
+                  <b>{row.category}</b> {row.category !== "Sleep" && <span className="badge">awake</span>}
                 </div>
 
-                {/* HOURS - numeric keypad (integers 0..168) */}
+                {/* HOURS -> numeric keypad */}
                 <div>
                   <input
                     className="input"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    enterKeyHint="next"
-                    placeholder="0"
+                    type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="next" placeholder="0"
                     value={row.hours === 0 ? "" : String(row.hours)}
                     onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => {
@@ -311,15 +243,11 @@ export default function SurveyPage() {
                   <div className="muted" style={{ fontSize: 12 }}>hrs</div>
                 </div>
 
-                {/* RI - numeric keypad (1..10, blank allowed) */}
+                {/* RI -> numeric keypad */}
                 <div>
                   <input
                     className="input"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    enterKeyHint="next"
-                    placeholder="5"
+                    type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="next" placeholder="5"
                     value={row.ri === 0 ? "" : String(row.ri)}
                     onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => {
@@ -335,18 +263,11 @@ export default function SurveyPage() {
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: 10,
-              fontWeight: 700,
-              color:
-                remaining === 0 ? "var(--teal)" : remaining > 0 ? "var(--amber)" : "var(--rose)",
-            }}
-          >
+          <div style={{ marginTop: 10, fontWeight: 700, color: remaining === 0 ? "var(--teal)" : remaining > 0 ? "var(--amber)" : "var(--rose)" }}>
             {hoursText}
           </div>
 
-          {/* Model (ELI / Calibration / RI Multiplier) — numeric keypad too */}
+          {/* Model */}
           <div className="card" style={{ marginTop: 12, background: "#f5fbff" }}>
             <div className="label">Model</div>
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -354,10 +275,7 @@ export default function SurveyPage() {
                 ELI (1–10) — 5 = neutral, &lt;5 drag, &gt;5 lift
                 <input
                   className="input"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="5"
+                  type="text" inputMode="numeric" pattern="[0-9]*" placeholder="5"
                   value={String(ELI)}
                   onFocus={(e) => e.currentTarget.select()}
                   onChange={(e) => {
@@ -372,15 +290,13 @@ export default function SurveyPage() {
                 Calibration max (10 → …)
                 <input
                   className="input"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="8.75"
+                  type="text" inputMode="decimal" placeholder="8.75"
                   value={String(calMax)}
                   onFocus={(e) => e.currentTarget.select()}
                   onChange={(e) => {
                     const n = parseDecimal(e.target.value);
                     const safe = isNaN(n) ? 8.75 : n;
-                    setCalMax(clamp(safe, 6, 10)); // keep in a sensible range
+                    setCalMax(clamp(safe, 6, 10));
                   }}
                 />
               </label>
@@ -389,44 +305,31 @@ export default function SurveyPage() {
                 RI multiplier
                 <input
                   className="input"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="1"
+                  type="text" inputMode="decimal" placeholder="1"
                   value={String(riMult)}
                   onFocus={(e) => e.currentTarget.select()}
                   onChange={(e) => {
                     const n = parseDecimal(e.target.value);
                     const safe = isNaN(n) ? 1 : n;
-                    setRiMult(clamp(safe, 0.1, 3)); // guardrails
+                    setRiMult(clamp(safe, 0.1, 3));
                   }}
                 />
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <input
-                  type="checkbox"
-                  checked={crossLift}
-                  onChange={(e) => setCrossLift(e.target.checked)}
-                />
+                <input type="checkbox" checked={crossLift} onChange={(e) => setCrossLift(e.target.checked)} />
                 Cross-lift (let strong areas lift weak)
               </label>
             </div>
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              className="btn primary"
-              onClick={calculate}
-              disabled={loading || remaining !== 0}
-              title={remaining !== 0 ? "Allocate all 168 hours" : ""}
-            >
+            <button className="btn primary" onClick={calculate} disabled={loading || remaining !== 0}
+              title={remaining !== 0 ? "Allocate all 168 hours" : ""}>
               {loading ? "Calculating…" : "See my Life Morale"}
             </button>
             {remaining !== 0 && (
-              <button
-                className="btn ghost"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              >
+              <button className="btn ghost" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
                 Back to top
               </button>
             )}

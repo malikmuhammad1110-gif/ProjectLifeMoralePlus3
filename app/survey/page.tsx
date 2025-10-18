@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import LogoPLM from "@/components/LogoPLM";
 
@@ -25,7 +25,7 @@ function InfoTip({
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -234,7 +234,7 @@ export default function SurveyPage() {
             <b>ELI</b> — Emotional Load Index
             <InfoTip title="ELI — Emotional Load Index">
               Your current emotional “weather.” We use 1–10 where <b>5 = neutral</b>. Below 5 adds a drag; above 5 creates a tailwind.
-              E.g., “Got a promotion—traffic can’t touch my mood” (ELI > 5).
+              E.g., “Got a promotion—traffic can’t touch my mood” (ELI &gt; 5).
             </InfoTip>
           </div>
         </div>

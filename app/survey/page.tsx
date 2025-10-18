@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import LogoPLM from "@/components/LogoPLM";
 
 type Answer = { score: number | null };
 type TimeRow = { category: string; hours: number; ri: number };
@@ -54,8 +55,7 @@ export default function SurveyPage() {
   );
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
 
-  // ELI with positive possibility:
-  // 1..10 scale where 5 = neutral; <5 = emotional drag; >5 = positive tailwind
+  // ELI with positive possibility (5 = neutral; <5 drag; >5 lift)
   const [ELI, setELI] = useState<number>(5);
 
   const [crossLift, setCrossLift] = useState<boolean>(true);
@@ -96,8 +96,6 @@ export default function SurveyPage() {
         answers,
         timeMap,
         ELI,
-        // These config hints let the backend (if it uses them) apply ELI both ways:
-        // 5 = neutral, <5 drag, >5 lift. Harmless if API ignores them.
         config: {
           calibration: { k: 1.936428228, max: calMax },
           ri: { globalMultiplier: riMult },
@@ -138,14 +136,17 @@ export default function SurveyPage() {
 
   return (
     <div className="grid" style={{ gap: 18 }}>
-      {/* Banner */}
+      {/* Banner with logo */}
       <div className="banner">
-        <div style={{ flex: 1 }}>
-          <div className="badge">Life Morale Survey</div>
-          <h1 style={{ margin: "6px 0 0" }}>How’s life, really?</h1>
-          <p className="muted" style={{ margin: "6px 0 0" }}>
-            Quick sliders. Honest answers. Big clarity.
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LogoPLM size={36} wordmark />
+          <div>
+            <div className="badge">Life Morale Survey</div>
+            <h1 style={{ margin: "6px 0 0" }}>How’s life, really?</h1>
+            <p className="muted" style={{ margin: "6px 0 0" }}>
+              Quick sliders. Honest answers. Big clarity.
+            </p>
+          </div>
         </div>
         <div className="card" style={{ textAlign: "center" }}>
           <div className="label">Progress</div>
@@ -198,23 +199,21 @@ export default function SurveyPage() {
         </div>
 
         <p className="muted" style={{ marginTop: 10 }}>
-          Tip: The goal isn’t a perfect 10. Small lifts (better sleep, less commute stress, more connection) change the math.
+          Sliders begin unanswered. Drag to set a score, or tap <b>Use 5</b> if 5 fits.
         </p>
       </div>
 
       <div className="grid cols-2">
         {/* Questions */}
         <div className="card">
-          <div className="section-title">
-            <span style={{ color: "var(--blue)" }}>•</span> 24 questions (confirm each)
-          </div>
+          <div className="section-title" data-emoji="🧭">24 questions (confirm each)</div>
           <p className="muted" style={{ marginTop: 4 }}>
             Each item must be set (drag or “Use 5”) for 100% progress.
           </p>
 
           {QUESTIONS.map((q, i) => {
             const current = answers[i].score; // null = unanswered
-            const displayVal = current ?? 5;  // show 5 visually, but doesn't count until set
+            const displayVal = current ?? 5;  // visual start point
 
             return (
               <div
@@ -255,7 +254,6 @@ export default function SurveyPage() {
                   )}
                 </div>
 
-                {/* If unanswered, start at 5 but don't count until they move or tap 'Use 5' */}
                 {current === null ? (
                   <input
                     className="slider"
@@ -284,9 +282,7 @@ export default function SurveyPage() {
 
         {/* Time Map & Model */}
         <div className="card">
-          <div className="section-title">
-            <span style={{ color: "var(--teal)" }}>•</span> 168-hour time map
-          </div>
+          <div className="section-title" data-emoji="🗓️">168-hour time map</div>
           <p className="muted" style={{ marginTop: 4 }}>
             Hours per week + RI (1–10; 5 = neutral)
           </p>
@@ -385,7 +381,7 @@ export default function SurveyPage() {
             <button
               className="btn primary"
               onClick={calculate}
-              disabled={!canCalculate}
+              disabled={!(remaining === 0 && allAnswered) || loading}
               title={
                 !allAnswered
                   ? "Answer all 24 questions"

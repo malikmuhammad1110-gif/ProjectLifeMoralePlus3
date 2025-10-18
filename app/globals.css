@@ -1,168 +1,185 @@
-/* === BASE === */
 :root {
-  --bg: #FAFAFA;
-  --text: #2B2B2B;
-  --muted: #7D8790;
-  --border: #E6E8EB;
-
-  --primaryA: #4F9CF9;
-  --primaryB: #2BD4A9;
-  --accent: #F97373;
-
+  /* === Brand Colors === */
+  --primaryA: #18B892;
+  --primaryB: #6EE7C2;
   --green: #10B981;
+  --teal: #14B8A6;
+  --amber: #FBBF24;
+  --rose: #F87171;
   --blue: #3B82F6;
-  --amber: #F59E0B;
-  --rose: #EF4444;
 
+  /* === Text & Background === */
+  --bg: #F9FFFC;
   --card: #FFFFFF;
-  --radius: 12px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.04);
+  --border: #E5F3EE;
+  --text: #0F172A;
+  --muted: #6B7280;
+
+  /* === Effects === */
+  --shadow: 0 2px 6px rgba(0,0,0,0.04);
+  --radius: 8px;
+  --transition: 0.25s ease-in-out;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-  line-height: 1.55;
 }
 
-/* === LAYOUT === */
-.grid { display: grid; gap: 20px; }
-.grid.cols-2 { grid-template-columns: 1fr; gap: 20px; }
-@media (min-width: 900px) {
-  .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px;
 }
+
+/* === Common UI elements === */
 
 .card {
   background: var(--card);
-  border-radius: var(--radius);
   border: 1px solid var(--border);
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 24px;
+  padding: 20px;
 }
+
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: #E6FFF6;
+  color: var(--teal);
+}
+.btn:hover {
+  background: #CFFCEA;
+}
+.btn.primary {
+  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
+  color: white;
+}
+.btn.primary:hover {
+  filter: brightness(1.05);
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn.ghost:hover {
+  border-color: var(--primaryA);
+  color: var(--primaryA);
+}
+
+.badge {
+  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* === Layout helpers === */
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+.grid.cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 13px;
+  background: #F9FFFC;
+}
+
+/* === Inputs === */
+
+.input {
+  width: 70px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--primaryA);
+}
+
+.progress {
+  width: 100%;
+  height: 6px;
+  background: #E8F7F0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
+  transition: width 0.3s ease;
+}
+
+/* === Typography tweaks === */
+
+h1, h2, h3 {
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  color: var(--text);
+}
+
+a {
+  color: var(--primaryA);
+  text-decoration: none;
+  font-weight: 600;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* === Cards with gradient header option === */
 
 .banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #EAF3FF, #EFFDF9);
-  border-radius: var(--radius);
-  padding: 20px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-/* === TEXT === */
-.label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.badge {
-  display: inline-block;
-  font-size: 12px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: #EEF6FF;
-  color: #2563EB;
-  border: 1px solid #D8E8FF;
-}
-
-/* === BUTTONS === */
-.btn {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-weight: 600;
-  background: #FFF;
-  cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-.btn:hover {
-  background: #F7FBFF;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-.btn.primary {
-  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
-  color: white;
-  border: none;
-}
-.btn.primary:hover {
-  box-shadow: 0 3px 10px rgba(79,156,249,0.25);
-}
-.btn.ghost {
-  background: transparent;
-  color: var(--text);
-}
-
-/* === FORMS === */
-.input {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px;
-  background: #FFF;
-}
-
-.slider {
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  background: #E5E7EB;
-  outline: none;
-}
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--primaryA);
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.slider::-webkit-slider-thumb:hover {
-  background: var(--primaryB);
-}
-
-/* === SMALL ELEMENTS === */
-.progress {
-  height: 8px;
-  border-radius: 999px;
-  background: #EEE;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-.progress > div {
-  height: 100%;
-  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
-  transition: width 0.35s ease;
-}
-
-.kpi {
-  display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-.pill {
-  background: #FFF;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 14px;
+  background: linear-gradient(135deg, #E9F9F3, #F0FFFA);
+  border-radius: var(--radius);
+  padding: 16px 20px;
 }
 
-/* === EMOJI DECORATION === */
-.section-title::before {
-  content: attr(data-emoji);
-  margin-right: 6px;
-  font-size: 18px;
+.section-title {
+  font-weight: 700;
+  color: var(--primaryA);
+  margin-bottom: 4px;
 }
-
-/* === UTILITY === */
-.muted { color: var(--muted); }

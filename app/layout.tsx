@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "PLM+ — Life Morale",
   description: "Measure your morale. Design your peace.",

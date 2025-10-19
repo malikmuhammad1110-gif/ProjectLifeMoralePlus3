@@ -59,10 +59,16 @@ export default function ResultsPage() {
   }
 
   const MAX = 8.75;
+
   const final = typeof result?.finalLMI === "number" ? result.finalLMI : 0;
-  const raw = typeof result?.rawLMS === "number" ? result.rawLMS : 0;
+  const raw   = typeof result?.rawLMS   === "number" ? result.rawLMS   : 0;
   const riAdj = typeof result?.riAdjusted === "number" ? result.riAdjusted : 0;
-  const pct = useMemo(() => Math.round((Math.max(0, Math.min(final, MAX)) / MAX) * 100)), [final];
+
+  // ✅ FIXED: correct useMemo parentheses
+  const pct = useMemo(() => {
+    return Math.round((Math.max(0, Math.min(final, MAX)) / MAX) * 100);
+  }, [final]);
+
   const b = useMemo(() => band(final), [final]);
 
   const QUESTIONS = [

@@ -33,8 +33,7 @@ export default function Home() {
       <div className="card">
         <h1 style={{ marginTop: 0 }}>Welcome to PLM+</h1>
         <p className="muted" style={{ marginBottom: 12 }}>
-          PLM+ (Project Life Morale) helps you visualize your quality of life — not as a single number,
-          but as a living system of time, emotion, and balance.
+          PLM+ helps you understand where your life energy is going, what is draining or uplifting you, and which small changes may realistically improve your overall morale.
         </p>
         <ul style={{ marginTop: 0, marginBottom: 10 }}>
           <li>🧭 Discover how your time and mindset shape your week.</li>

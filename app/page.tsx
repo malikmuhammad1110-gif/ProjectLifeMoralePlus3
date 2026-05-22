@@ -20,7 +20,7 @@ export default function Home() {
           padding: "24px 28px",
         }}
       >
-        <LogoPLM size={52} wordmark />
+        <LogoPLM size={52} />
         <button
           className="btn primary"
           onClick={() => router.push("/survey")}

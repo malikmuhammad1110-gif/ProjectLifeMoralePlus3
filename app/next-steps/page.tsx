@@ -9,6 +9,7 @@ type Slide = {
   title: string;
   message: string;
   actions: string[];
+  mood: string;
   gradient: string;
 };
 
@@ -17,97 +18,118 @@ const SLIDES: Slide[] = [
     category: "Overall Morale",
     icon: "🌿",
     title: "Your Life Morale Reflection",
+    mood: "Clarity",
     message:
-      "PLM+ is not judging your life. It is showing where your energy, pressure, meaning, and recovery are interacting.",
+      "PLM+ is not judging your life. It is revealing how your emotional climate, responsibilities, recovery, and direction are interacting beneath the surface.",
     actions: [
-      "Notice your strongest support system.",
-      "Identify the category creating the most drag.",
-      "Choose one realistic change, not five.",
+      "Notice which areas stabilize you emotionally.",
+      "Identify the category carrying the most pressure.",
+      "Focus on one realistic adjustment at a time.",
     ],
-    gradient: "linear-gradient(135deg,#064e3b,#059669,#a7f3d0)",
+    gradient:
+      "linear-gradient(135deg,#022c22,#065f46,#10b981,#a7f3d0)",
   },
+
   {
     category: "Relationships",
     icon: "💚",
-    title: "Connection & Emotional Weight",
+    title: "Connection & Emotional Carryover",
+    mood: "Attachment",
     message:
-      "Relationships can be a source of strength, but they can also carry emotional residue into the rest of your week.",
+      "Relationships can become either emotional anchors or emotional leakage points depending on how much unresolved pressure they carry into the rest of your week.",
     actions: [
-      "Protect time for the people who refill you.",
-      "Reduce repeated conflict where possible.",
-      "Be honest about which connections drain you.",
+      "Protect emotionally safe connections.",
+      "Reduce repetitive emotional conflict.",
+      "Notice which interactions restore your nervous system.",
     ],
-    gradient: "linear-gradient(135deg,#065f46,#10b981,#d1fae5)",
+    gradient:
+      "linear-gradient(135deg,#064e3b,#047857,#34d399,#d1fae5)",
   },
+
   {
     category: "Financial Pressure",
     icon: "💵",
     title: "Money & Mental Bandwidth",
+    mood: "Pressure",
     message:
-      "Financial pressure does not only affect your wallet. It can quietly consume focus, patience, sleep, and emotional flexibility.",
+      "Financial instability quietly consumes attention, patience, recovery, and emotional flexibility long before it affects material comfort.",
     actions: [
-      "Pick one bill, debt, or expense to attack first.",
-      "Create a weekly cash-flow check-in.",
-      "Separate survival spending from status spending.",
+      "Target one financial pressure point first.",
+      "Reduce hidden emotional spending.",
+      "Build predictability before luxury.",
     ],
-    gradient: "linear-gradient(135deg,#14532d,#22c55e,#dcfce7)",
+    gradient:
+      "linear-gradient(135deg,#14532d,#15803d,#4ade80,#dcfce7)",
   },
+
   {
-    category: "Health & Energy",
+    category: "Body & Energy",
     icon: "🏋🏽",
-    title: "Body, Confidence & Physical Fuel",
+    title: "Physical Capacity & Recovery",
+    mood: "Strength",
     message:
-      "Your physical condition affects how much pressure your mind can carry. Better energy usually creates better emotional range.",
+      "Your body influences how much emotional weight your mind can realistically carry. Recovery changes perception more than most people realize.",
     actions: [
-      "Prioritize protein, hydration, and sleep basics.",
-      "Choose consistency over punishment workouts.",
-      "Track energy, not just weight.",
+      "Prioritize sleep before optimization.",
+      "Use movement to regulate stress.",
+      "Aim for consistency, not punishment.",
     ],
-    gradient: "linear-gradient(135deg,#064e3b,#14b8a6,#ccfbf1)",
+    gradient:
+      "linear-gradient(135deg,#042f2e,#0f766e,#14b8a6,#ccfbf1)",
   },
+
   {
-    category: "Recovery",
+    category: "Stress & Recovery",
     icon: "〰️",
-    title: "Sleep, Stress & Recovery Reserves",
+    title: "Recovery Reserves",
+    mood: "Restoration",
     message:
-      "When recovery is low, life can feel heavier than it objectively is. Your system needs restoration, not just motivation.",
+      "When recovery drops too low, life begins to feel heavier than it objectively is. Exhaustion distorts emotional interpretation.",
     actions: [
-      "Set one fixed wind-down routine.",
-      "Reduce late-night stimulation when possible.",
-      "Treat rest as maintenance, not laziness.",
+      "Protect at least one calm period daily.",
+      "Reduce overstimulation before sleep.",
+      "Treat recovery as maintenance, not reward.",
     ],
-    gradient: "linear-gradient(135deg,#0f172a,#0f766e,#99f6e4)",
+    gradient:
+      "linear-gradient(135deg,#0f172a,#164e63,#0f766e,#99f6e4)",
   },
+
   {
     category: "Purpose",
     icon: "🧭",
     title: "Direction & Meaning",
+    mood: "Identity",
     message:
-      "Purpose can help you endure hard seasons, but it should not become the only thing compensating for exhaustion.",
+      "Purpose creates endurance, but purpose alone cannot sustainably compensate for exhaustion, imbalance, or emotional overload forever.",
     actions: [
+      "Reconnect effort to long-term identity.",
       "Clarify what you are building toward.",
-      "Connect daily effort to long-term identity.",
-      "Make sure ambition is supported by recovery.",
+      "Make sure ambition is supported structurally.",
     ],
-    gradient: "linear-gradient(135deg,#134e4a,#0d9488,#fef3c7)",
+    gradient:
+      "linear-gradient(135deg,#134e4a,#0d9488,#2dd4bf,#fef3c7)",
   },
+
   {
     category: "Next Move",
     icon: "⚡",
     title: "Highest ROI Next Step",
+    mood: "Momentum",
     message:
-      "The goal is not to fix your whole life at once. The goal is to find the smallest realistic change that improves multiple areas.",
+      "The goal is not to repair your entire life instantly. The goal is to identify the smallest realistic shift that improves multiple systems simultaneously.",
     actions: [
       "Choose one category to improve this week.",
-      "Choose one habit to reduce emotional drag.",
-      "Retake PLM+ after 7 days and compare.",
+      "Reduce one repeating source of emotional drag.",
+      "Retake PLM+ later and compare patterns.",
     ],
-    gradient: "linear-gradient(135deg,#052e2b,#059669,#fef9c3)",
+    gradient:
+      "linear-gradient(135deg,#022c22,#047857,#10b981,#fef9c3)",
   },
 ];
 
 export default function NextStepsPage() {
   const [index, setIndex] = useState(0);
+
   const slide = SLIDES[index];
 
   const progress = useMemo(
@@ -116,139 +138,203 @@ export default function NextStepsPage() {
   );
 
   return (
-    <div className="main grid" style={{ gap: 20 }}>
-      <div className="header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LogoPLM size={40} />
-          <h1 style={{ margin: 0 }}>Next Steps For You</h1>
-        </div>
-
-        <div className="card" style={{ minWidth: 180 }}>
-          <div className="label">Reflection Progress</div>
-          <div className="progress">
-            <div style={{ width: `${progress}%` }} />
-          </div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {index + 1} of {SLIDES.length}
-          </div>
-        </div>
-      </div>
-
+    <main className="main grid" style={{ gap: 24 }}>
       <section
         className="card"
         style={{
-          minHeight: 520,
+          minHeight: 760,
           position: "relative",
           overflow: "hidden",
-          color: "#fff",
           background: slide.gradient,
-          display: "grid",
-          alignItems: "end",
+          color: "white",
+          padding: "42px 34px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
         }}
       >
+        {/* Ambient glow */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "radial-gradient(circle at 20% 20%, rgba(255,255,255,.28), transparent 28%), radial-gradient(circle at 80% 10%, rgba(255,255,255,.16), transparent 30%)",
+              "radial-gradient(circle at 15% 20%, rgba(255,255,255,.22), transparent 28%), radial-gradient(circle at 80% 10%, rgba(255,255,255,.14), transparent 30%), radial-gradient(circle at 50% 90%, rgba(255,255,255,.08), transparent 32%)",
           }}
         />
 
+        {/* Huge icon */}
         <div
           style={{
             position: "absolute",
-            right: -20,
-            top: 30,
-            fontSize: 180,
-            opacity: 0.18,
-            filter: "blur(.2px)",
+            right: -10,
+            top: 10,
+            fontSize: 260,
+            opacity: 0.12,
+            filter: "blur(.4px)",
           }}
         >
           {slide.icon}
         </div>
 
-        <div style={{ position: "relative", zIndex: 2, maxWidth: 720 }}>
+        {/* Top */}
+        <div style={{ position: "relative", zIndex: 2 }}>
           <div
             style={{
-              display: "inline-flex",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "rgba(255,255,255,.18)",
-              border: "1px solid rgba(255,255,255,.25)",
-              marginBottom: 16,
-              fontWeight: 800,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            {slide.category}
-          </div>
+            <LogoPLM size={46} />
 
-          <h2 style={{ fontSize: 42, lineHeight: 1.05, margin: "0 0 14px" }}>
-            {slide.title}
-          </h2>
-
-          <p style={{ fontSize: 18, lineHeight: 1.6, opacity: 0.95 }}>
-            {slide.message}
-          </p>
-
-          <div
-            style={{
-              marginTop: 22,
-              display: "grid",
-              gap: 10,
-            }}
-          >
-            {slide.actions.map((action, i) => (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
               <div
-                key={i}
                 style={{
-                  padding: "12px 14px",
-                  borderRadius: 16,
-                  background: "rgba(255,255,255,.16)",
-                  border: "1px solid rgba(255,255,255,.22)",
-                  backdropFilter: "blur(10px)",
-                  fontWeight: 700,
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,.14)",
+                  border: "1px solid rgba(255,255,255,.16)",
+                  fontWeight: 800,
                 }}
               >
-                {i + 1}. {action}
+                {slide.mood}
               </div>
-            ))}
+
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,.14)",
+                  border: "1px solid rgba(255,255,255,.16)",
+                  fontWeight: 800,
+                }}
+              >
+                {index + 1}/{SLIDES.length}
+              </div>
+            </div>
           </div>
+
+          <div style={{ marginTop: 40 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                padding: "10px 14px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,.14)",
+                border: "1px solid rgba(255,255,255,.16)",
+                marginBottom: 20,
+                fontWeight: 800,
+              }}
+            >
+              {slide.category}
+            </div>
+
+            <h1
+              style={{
+                fontSize: "clamp(46px,7vw,90px)",
+                lineHeight: 0.95,
+                margin: "0 0 22px",
+                maxWidth: 900,
+              }}
+            >
+              {slide.title}
+            </h1>
+
+            <p
+              style={{
+                fontSize: 22,
+                lineHeight: 1.7,
+                maxWidth: 760,
+                opacity: 0.94,
+              }}
+            >
+              {slide.message}
+            </p>
+          </div>
+        </div>
+
+        {/* Action cards */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            display: "grid",
+            gap: 14,
+            marginTop: 30,
+          }}
+        >
+          {slide.actions.map((action, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "18px 18px",
+                borderRadius: 22,
+                background: "rgba(255,255,255,.12)",
+                border: "1px solid rgba(255,255,255,.16)",
+                backdropFilter: "blur(14px)",
+                fontSize: 17,
+                lineHeight: 1.5,
+                fontWeight: 700,
+              }}
+            >
+              <span style={{ opacity: 0.7, marginRight: 8 }}>
+                0{i + 1}
+              </span>
+              {action}
+            </div>
+          ))}
         </div>
       </section>
 
-      <div
+      {/* Navigation */}
+      <section
         className="card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           gap: 12,
-          flexWrap: "wrap",
           alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
         <button
           className="btn ghost"
-          disabled={index === 0}
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+          onClick={() => {
+            if (index === 0) {
+              window.location.href = "/results";
+            } else {
+              setIndex((i) => Math.max(0, i - 1));
+            }
+          }}
         >
-          Back
+          {index === 0 ? "Back to Results" : "Previous"}
         </button>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           {SLIDES.map((_, i) => (
             <button
               key={i}
               onClick={() => setIndex(i)}
-              aria-label={`Go to slide ${i + 1}`}
               style={{
-                width: i === index ? 28 : 10,
+                width: i === index ? 36 : 10,
                 height: 10,
                 borderRadius: 999,
                 border: "none",
-                background: i === index ? "var(--primaryA)" : "var(--border)",
+                background:
+                  i === index
+                    ? "var(--primaryA)"
+                    : "rgba(15,118,110,.18)",
+                transition: ".25s ease",
                 cursor: "pointer",
-                transition: ".2s ease",
               }}
             />
           ))}
@@ -257,9 +343,11 @@ export default function NextStepsPage() {
         {index < SLIDES.length - 1 ? (
           <button
             className="btn primary"
-            onClick={() => setIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
+            onClick={() =>
+              setIndex((i) => Math.min(SLIDES.length - 1, i + 1))
+            }
           >
-            Next Slide
+            Continue →
           </button>
         ) : (
           <button
@@ -269,7 +357,7 @@ export default function NextStepsPage() {
             Retake PLM+
           </button>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

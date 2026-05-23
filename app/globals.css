@@ -308,3 +308,18 @@ a{
 a:hover{
   text-decoration:underline;
 }
+@media (max-width: 700px) {
+  .hero-float-cards {
+    display: none !important;
+  }
+
+  .hero-title-mobile {
+    font-size: 46px !important;
+    line-height: 0.95 !important;
+  }
+
+  .hero-subtext-mobile {
+    font-size: 18px !important;
+    line-height: 1.55 !important;
+  }
+}

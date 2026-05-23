@@ -57,6 +57,7 @@ export default function Home() {
           </div>
 
           <h1
+            className="hero-title-mobile"
             style={{
               fontSize: "clamp(46px, 8vw, 86px)",
               lineHeight: 0.95,
@@ -68,7 +69,7 @@ export default function Home() {
           </h1>
 
           <p
-            className="muted"
+            className="muted hero-subtext-mobile"
             style={{
               fontSize: 20,
               lineHeight: 1.65,
@@ -90,6 +91,7 @@ export default function Home() {
             <button className="btn primary" onClick={() => router.push("/survey")}>
               Start Reflection →
             </button>
+
             <button className="btn ghost" onClick={() => router.push("/next-steps")}>
               Preview Next Steps
             </button>
@@ -97,6 +99,7 @@ export default function Home() {
         </div>
 
         <div
+          className="hero-float-cards"
           style={{
             position: "absolute",
             right: 32,
@@ -121,6 +124,7 @@ export default function Home() {
               }}
             >
               <span style={{ fontSize: 22 }}>{item.icon}</span>
+
               <div>
                 <div style={{ fontWeight: 900 }}>{item.value}</div>
                 <div className="muted" style={{ fontSize: 12 }}>
@@ -167,9 +171,11 @@ export default function Home() {
           <div className="label" style={{ color: "rgba(255,255,255,.75)" }}>
             The PLM+ Method
           </div>
+
           <h2 style={{ fontSize: "clamp(32px, 5vw, 54px)", marginBottom: 10 }}>
             Time × Emotion × Residual Influence
           </h2>
+
           <p style={{ fontSize: 18, lineHeight: 1.6, opacity: 0.92 }}>
             LMI measures your Life Morale Index. RI shows how experiences linger
             after they happen. ELI captures the emotional weather of your current
@@ -182,10 +188,12 @@ export default function Home() {
         <h2 style={{ fontSize: "clamp(30px, 5vw, 52px)", marginTop: 0 }}>
           Get a clearer read on yourself.
         </h2>
+
         <p className="muted" style={{ maxWidth: 620, margin: "0 auto 22px" }}>
           Take the reflection, see your Life Morale score, then move through a
           guided next-steps deck built around your current life systems.
         </p>
+
         <button className="btn primary" onClick={() => router.push("/survey")}>
           Begin PLM+ →
         </button>

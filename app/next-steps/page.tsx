@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LogoPLM from "@/components/LogoPLM";
 
 type Slide = {
@@ -13,9 +13,79 @@ type Slide = {
   gradient: string;
 };
 
+function getStateOfLife(score: number, eli: number = 5) {
+  if (score >= 7.8) {
+    return {
+      title: "Aligned Growth",
+      mood: "Alignment",
+      icon: "🌿",
+      message:
+        "Your current systems appear relatively aligned. Momentum, recovery, and meaning are reinforcing each other more than competing.",
+    };
+  }
+
+  if (score >= 6.8 && eli <= 4) {
+    return {
+      title: "High Pressure / High Meaning",
+      mood: "Endurance",
+      icon: "⚡",
+      message:
+        "You appear to be carrying meaningful responsibility under pressure. Direction is helping sustain you through stress.",
+    };
+  }
+
+  if (score >= 6.0) {
+    return {
+      title: "Stable Momentum",
+      mood: "Stability",
+      icon: "🧭",
+      message:
+        "Your foundation appears relatively stable, though some systems may still require refinement and better recovery balance.",
+    };
+  }
+
+  if (score >= 5.0 && eli <= 4) {
+    return {
+      title: "Purpose-Driven Pressure",
+      mood: "Pressure",
+      icon: "💭",
+      message:
+        "Purpose and obligation may currently be compensating for emotional fatigue or overload.",
+    };
+  }
+
+  if (score >= 4.5) {
+    return {
+      title: "Emotional Drag",
+      mood: "Weight",
+      icon: "〰️",
+      message:
+        "Certain unresolved pressures or emotional leaks may be reducing your morale more than you consciously realize.",
+    };
+  }
+
+  if (score >= 3.5) {
+    return {
+      title: "Rebuilding Phase",
+      mood: "Recovery",
+      icon: "🛠️",
+      message:
+        "Your current season may involve recalibration, emotional rebuilding, or restructuring multiple parts of life at once.",
+    };
+  }
+
+  return {
+    title: "Recovery Deficit",
+    mood: "Restoration",
+    icon: "🌙",
+    message:
+      "Your system appears heavily strained. Restoration and stabilization may currently matter more than optimization.",
+  };
+}
+
 const SLIDES: Slide[] = [
   {
-    category: "Overall Morale",
+    category: "Current State of Life",
     icon: "🌿",
     title: "Your Life Morale Reflection",
     mood: "Clarity",
@@ -29,7 +99,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#022c22,#065f46,#10b981,#a7f3d0)",
   },
-
   {
     category: "Relationships",
     icon: "💚",
@@ -45,7 +114,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#064e3b,#047857,#34d399,#d1fae5)",
   },
-
   {
     category: "Financial Pressure",
     icon: "💵",
@@ -61,7 +129,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#14532d,#15803d,#4ade80,#dcfce7)",
   },
-
   {
     category: "Body & Energy",
     icon: "🏋🏽",
@@ -77,7 +144,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#042f2e,#0f766e,#14b8a6,#ccfbf1)",
   },
-
   {
     category: "Stress & Recovery",
     icon: "〰️",
@@ -93,7 +159,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#0f172a,#164e63,#0f766e,#99f6e4)",
   },
-
   {
     category: "Purpose",
     icon: "🧭",
@@ -109,7 +174,6 @@ const SLIDES: Slide[] = [
     gradient:
       "linear-gradient(135deg,#134e4a,#0d9488,#2dd4bf,#fef3c7)",
   },
-
   {
     category: "Next Move",
     icon: "⚡",
@@ -129,12 +193,37 @@ const SLIDES: Slide[] = [
 
 export default function NextStepsPage() {
   const [index, setIndex] = useState(0);
+  const [result, setResult] = useState<any | null>(null);
+  const [input, setInput] = useState<any | null>(null);
 
-  const slide = SLIDES[index];
+  useEffect(() => {
+    const rawR = localStorage.getItem("LMI_RESULT");
+    const rawI = localStorage.getItem("LMI_INPUT");
+
+    if (rawR) setResult(JSON.parse(rawR));
+    if (rawI) setInput(JSON.parse(rawI));
+  }, []);
+
+  const final =
+    typeof result?.finalLMI === "number" ? result.finalLMI : 0;
+
+  const dynamicState = getStateOfLife(final, input?.ELI ?? 5);
+
+  const dynamicSlides = [...SLIDES];
+
+  dynamicSlides[0] = {
+    ...dynamicSlides[0],
+    title: dynamicState.title,
+    mood: dynamicState.mood,
+    icon: dynamicState.icon,
+    message: dynamicState.message,
+  };
+
+  const slide = dynamicSlides[index];
 
   const progress = useMemo(
-    () => Math.round(((index + 1) / SLIDES.length) * 100),
-    [index]
+    () => Math.round(((index + 1) / dynamicSlides.length) * 100),
+    [index, dynamicSlides.length]
   );
 
   return (
@@ -153,7 +242,6 @@ export default function NextStepsPage() {
           justifyContent: "space-between",
         }}
       >
-        {/* Ambient glow */}
         <div
           style={{
             position: "absolute",
@@ -163,7 +251,6 @@ export default function NextStepsPage() {
           }}
         />
 
-        {/* Huge icon */}
         <div
           style={{
             position: "absolute",
@@ -177,7 +264,6 @@ export default function NextStepsPage() {
           {slide.icon}
         </div>
 
-        {/* Top */}
         <div style={{ position: "relative", zIndex: 2 }}>
           <div
             style={{
@@ -190,13 +276,7 @@ export default function NextStepsPage() {
           >
             <LogoPLM size={46} />
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div
                 style={{
                   padding: "8px 12px",
@@ -218,7 +298,7 @@ export default function NextStepsPage() {
                   fontWeight: 800,
                 }}
               >
-                {index + 1}/{SLIDES.length}
+                {index + 1}/{dynamicSlides.length}
               </div>
             </div>
           </div>
@@ -262,7 +342,6 @@ export default function NextStepsPage() {
           </div>
         </div>
 
-        {/* Action cards */}
         <div
           style={{
             position: "relative",
@@ -295,7 +374,6 @@ export default function NextStepsPage() {
         </div>
       </section>
 
-      {/* Navigation */}
       <section
         className="card"
         style={{
@@ -320,7 +398,7 @@ export default function NextStepsPage() {
         </button>
 
         <div style={{ display: "flex", gap: 10 }}>
-          {SLIDES.map((_, i) => (
+          {dynamicSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => setIndex(i)}
@@ -340,11 +418,11 @@ export default function NextStepsPage() {
           ))}
         </div>
 
-        {index < SLIDES.length - 1 ? (
+        {index < dynamicSlides.length - 1 ? (
           <button
             className="btn primary"
             onClick={() =>
-              setIndex((i) => Math.min(SLIDES.length - 1, i + 1))
+              setIndex((i) => Math.min(dynamicSlides.length - 1, i + 1))
             }
           >
             Continue →

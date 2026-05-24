@@ -77,17 +77,104 @@ const SECTIONS = [
   },
 ];
 
-const DEFAULT_TIME: TimeRow[] = [
-  { category: "Sleep", hours: 49, ri: 5 },
-  { category: "Work", hours: 0, ri: 5 },
-  { category: "Commute", hours: 0, ri: 5 },
-  { category: "Relationships", hours: 0, ri: 5 },
-  { category: "Leisure", hours: 0, ri: 5 },
-  { category: "Health", hours: 0, ri: 5 },
-  { category: "Chores", hours: 0, ri: 5 },
-  { category: "Growth", hours: 0, ri: 5 },
-  { category: "Other", hours: 0, ri: 5 },
+const LIFE_SYSTEMS = [
+  {
+    category: "Sleep",
+    question: "How much sleep and recovery do you usually get weekly?",
+    options: [
+      { label: "Severely sleep deprived", detail: "Under 35 hrs", hours: 30 },
+      { label: "Below ideal", detail: "35–49 hrs", hours: 42 },
+      { label: "Healthy range", detail: "49–63 hrs", hours: 56 },
+      { label: "High recovery", detail: "63–80 hrs", hours: 70 },
+    ],
+  },
+  {
+    category: "Work",
+    question: "How much of your week revolves around work responsibilities?",
+    options: [
+      { label: "Minimal work demand", detail: "0–15 hrs", hours: 8 },
+      { label: "Part-time rhythm", detail: "15–30 hrs", hours: 22 },
+      { label: "Full-time rhythm", detail: "30–45 hrs", hours: 40 },
+      { label: "Heavy workload", detail: "45–65+ hrs", hours: 55 },
+    ],
+  },
+  {
+    category: "Relationships",
+    question: "How much meaningful time do you spend socially or relationally?",
+    options: [
+      { label: "Nearly isolated", detail: "0–5 hrs", hours: 3 },
+      { label: "Limited connection", detail: "5–15 hrs", hours: 10 },
+      { label: "Consistent connection", detail: "15–35 hrs", hours: 25 },
+      { label: "Deeply socially engaged", detail: "35+ hrs", hours: 45 },
+    ],
+  },
+  {
+    category: "Commute",
+    question: "How much time does travel or commuting consume weekly?",
+    options: [
+      { label: "Minimal travel burden", detail: "0–5 hrs", hours: 3 },
+      { label: "Moderate commuting", detail: "5–15 hrs", hours: 10 },
+      { label: "Heavy commuting", detail: "15–30 hrs", hours: 22 },
+      { label: "Travel dominates routine", detail: "30+ hrs", hours: 35 },
+    ],
+  },
+  {
+    category: "Leisure",
+    question: "How much time do you spend on relaxation, hobbies, or enjoyment?",
+    options: [
+      { label: "Almost none", detail: "0–5 hrs", hours: 3 },
+      { label: "Limited leisure", detail: "5–15 hrs", hours: 10 },
+      { label: "Balanced leisure", detail: "15–30 hrs", hours: 22 },
+      { label: "Leisure is a major part of life", detail: "30+ hrs", hours: 38 },
+    ],
+  },
+  {
+    category: "Health",
+    question: "How much time goes toward fitness, health, movement, or self-care?",
+    options: [
+      { label: "Very little", detail: "0–3 hrs", hours: 2 },
+      { label: "Light effort", detail: "3–7 hrs", hours: 5 },
+      { label: "Consistent routine", detail: "7–12 hrs", hours: 9 },
+      { label: "Health is a major focus", detail: "12+ hrs", hours: 15 },
+    ],
+  },
+  {
+    category: "Chores",
+    question: "How much time do responsibilities like errands, cleaning, or admin take?",
+    options: [
+      { label: "Very low", detail: "0–3 hrs", hours: 2 },
+      { label: "Manageable", detail: "3–8 hrs", hours: 6 },
+      { label: "Heavy", detail: "8–15 hrs", hours: 12 },
+      { label: "Constant maintenance", detail: "15+ hrs", hours: 20 },
+    ],
+  },
+  {
+    category: "Growth",
+    question: "How much time do you spend learning, building, creating, or improving?",
+    options: [
+      { label: "Almost none", detail: "0–3 hrs", hours: 2 },
+      { label: "Light growth", detail: "3–8 hrs", hours: 6 },
+      { label: "Consistent growth", detail: "8–15 hrs", hours: 12 },
+      { label: "Major growth season", detail: "15+ hrs", hours: 22 },
+    ],
+  },
+  {
+    category: "Other",
+    question: "How much time goes into things not captured above?",
+    options: [
+      { label: "Almost none", detail: "0–5 hrs", hours: 3 },
+      { label: "Some overflow", detail: "5–15 hrs", hours: 10 },
+      { label: "Noticeable amount", detail: "15–30 hrs", hours: 22 },
+      { label: "Major uncategorized time", detail: "30+ hrs", hours: 35 },
+    ],
+  },
 ];
+
+const DEFAULT_TIME: TimeRow[] = LIFE_SYSTEMS.map((system) => ({
+  category: system.category,
+  hours: system.options[1].hours,
+  ri: 5,
+}));
 
 export default function SurveyPage() {
   const router = useRouter();
@@ -98,11 +185,14 @@ export default function SurveyPage() {
   );
 
   const [timeMap, setTimeMap] = useState<TimeRow[]>(DEFAULT_TIME);
+  const [lifeSelections, setLifeSelections] = useState(
+    LIFE_SYSTEMS.map(() => 1)
+  );
 
   const [ELI, setELI] = useState<number>(5);
-  const [crossLift, setCrossLift] = useState(true);
-  const [riMult, setRiMult] = useState(1);
-  const [calMax, setCalMax] = useState(8.75);
+  const [crossLift] = useState(true);
+  const [riMult] = useState(1);
+  const [calMax] = useState(8.75);
 
   const [loading, setLoading] = useState(false);
 
@@ -124,7 +214,10 @@ export default function SurveyPage() {
     [timeMap]
   );
 
-  const remaining = 168 - totalHours;
+  const estimatedPressure =
+    totalHours <= 168
+      ? "Within normal weekly range"
+      : "High overlap / heavy life density";
 
   const setScore = (i: number, v: number) => {
     const next = [...answers];
@@ -132,10 +225,27 @@ export default function SurveyPage() {
     setAnswers(next);
   };
 
-  const setTime = (i: number, field: "hours" | "ri", v: number) => {
+  const setRI = (i: number, v: number) => {
     const next = [...timeMap];
-    next[i] = { ...next[i], [field]: v };
+    next[i] = { ...next[i], ri: v };
     setTimeMap(next);
+  };
+
+  const selectLifeSystem = (systemIndex: number, optionIndex: number) => {
+    const nextSelections = [...lifeSelections];
+    nextSelections[systemIndex] = optionIndex;
+    setLifeSelections(nextSelections);
+
+    const system = LIFE_SYSTEMS[systemIndex];
+    const option = system.options[optionIndex];
+
+    const nextTimeMap = [...timeMap];
+    nextTimeMap[systemIndex] = {
+      ...nextTimeMap[systemIndex],
+      hours: option.hours,
+    };
+
+    setTimeMap(nextTimeMap);
   };
 
   async function calculate() {
@@ -162,7 +272,14 @@ export default function SurveyPage() {
       const data = await res.json();
 
       localStorage.setItem("LMI_RESULT", JSON.stringify(data));
-      localStorage.setItem("LMI_INPUT", JSON.stringify({ ELI }));
+      localStorage.setItem(
+        "LMI_INPUT",
+        JSON.stringify({
+          ELI,
+          lifeSystems: timeMap,
+          estimatedTotalHours: totalHours,
+        })
+      );
 
       router.push("/results");
     } finally {
@@ -281,17 +398,10 @@ export default function SurveyPage() {
       <section className="grid" style={{ gap: 18 }}>
         {currentQuestions.map((q, localIndex) => {
           const globalIndex = currentSection.start + localIndex;
-
           const val = answers[globalIndex].score ?? 0;
 
           return (
-            <div
-              key={globalIndex}
-              className="card"
-              style={{
-                padding: "26px 22px",
-              }}
-            >
+            <div key={globalIndex} className="card" style={{ padding: "26px 22px" }}>
               <div
                 style={{
                   display: "flex",
@@ -313,13 +423,7 @@ export default function SurveyPage() {
                   {q}
                 </div>
 
-                <div
-                  className="pill"
-                  style={{
-                    fontSize: 16,
-                    padding: "10px 14px",
-                  }}
-                >
+                <div className="pill" style={{ fontSize: 16, padding: "10px 14px" }}>
                   {val}/10
                 </div>
               </div>
@@ -331,9 +435,7 @@ export default function SurveyPage() {
                 max={10}
                 step={1}
                 value={val}
-                onChange={(e) =>
-                  setScore(globalIndex, Number(e.target.value))
-                }
+                onChange={(e) => setScore(globalIndex, Number(e.target.value))}
               />
             </div>
           );
@@ -367,9 +469,7 @@ export default function SurveyPage() {
                 height: 10,
                 borderRadius: 999,
                 background:
-                  i === section
-                    ? "var(--primaryA)"
-                    : "rgba(15,118,110,.18)",
+                  i === section ? "var(--primaryA)" : "rgba(15,118,110,.18)",
                 transition: ".2s ease",
               }}
             />
@@ -379,9 +479,7 @@ export default function SurveyPage() {
         {section < SECTIONS.length - 1 ? (
           <button
             className="btn primary"
-            onClick={() =>
-              setSection((s) => Math.min(SECTIONS.length - 1, s + 1))
-            }
+            onClick={() => setSection((s) => Math.min(SECTIONS.length - 1, s + 1))}
           >
             Continue →
           </button>
@@ -389,103 +487,109 @@ export default function SurveyPage() {
           <button
             className="btn primary"
             onClick={() =>
-              document
-                .getElementById("time-map")
-                ?.scrollIntoView({ behavior: "smooth" })
+              document.getElementById("life-system-map")?.scrollIntoView({
+                behavior: "smooth",
+              })
             }
           >
-            Continue to Time Map →
+            Continue to Life System Map →
           </button>
         )}
       </section>
 
-      <section
-        id="time-map"
-        className="card"
-        style={{
-          padding: "34px 24px",
-        }}
-      >
-        <div className="label">168-Hour Time Map</div>
+      <section id="life-system-map" className="card" style={{ padding: "36px 24px" }}>
+        <div className="label">Life System Mapping</div>
 
         <h2 style={{ marginTop: 10 }}>
-          Where is your life energy actually going?
+          How does your week actually feel structured?
         </h2>
 
-        <p className="muted" style={{ maxWidth: 720 }}>
-          Allocate your weekly hours and assign each category a Residual
-          Influence score from 1–10.
+        <p className="muted" style={{ maxWidth: 760 }}>
+          Instead of manually calculating 168 hours, PLM+ estimates your life
+          structure through guided ranges. Some systems overlap, and that is
+          part of the model.
         </p>
 
-        <div style={{ display: "grid", gap: 14, marginTop: 26 }}>
-          {timeMap.map((row, i) => (
-            <div key={row.category} className="card">
-              <div className="row">
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 18 }}>
-                    {row.category}
-                  </div>
+        <div className="kpi" style={{ marginTop: 18 }}>
+          <div className="pill">
+            <b>Estimated density:</b> {totalHours} hrs
+          </div>
+          <div className="pill">
+            <b>Signal:</b> {estimatedPressure}
+          </div>
+        </div>
 
-                  {row.category !== "Sleep" && (
-                    <span className="badge">awake hours</span>
-                  )}
-                </div>
+        <div style={{ display: "grid", gap: 24, marginTop: 30 }}>
+          {LIFE_SYSTEMS.map((system, systemIndex) => (
+            <div key={system.category} className="card" style={{ padding: "24px 20px" }}>
+              <div className="label">{system.category}</div>
 
-                <div>
+              <h3 style={{ marginTop: 10, fontSize: 26 }}>{system.question}</h3>
+
+              <div style={{ display: "grid", gap: 12, marginTop: 22 }}>
+                {system.options.map((option, optionIndex) => {
+                  const active = lifeSelections[systemIndex] === optionIndex;
+
+                  return (
+                    <button
+                      key={option.label}
+                      onClick={() => selectLifeSystem(systemIndex, optionIndex)}
+                      style={{
+                        textAlign: "left",
+                        padding: "18px 18px",
+                        borderRadius: 22,
+                        border: active
+                          ? "2px solid var(--primaryA)"
+                          : "1px solid var(--border)",
+                        background: active ? "rgba(16,185,129,.08)" : "white",
+                        cursor: "pointer",
+                        transition: ".2s ease",
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, fontSize: 18 }}>
+                        {option.label}
+                      </div>
+
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        {option.detail}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginTop: 24 }}>
+                <div className="label">Residual Influence</div>
+
+                <p className="muted" style={{ marginTop: 6 }}>
+                  How much does this area emotionally carry into the rest of your life?
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    marginTop: 12,
+                  }}
+                >
                   <input
-                    className="input"
-                    type="number"
-                    value={row.hours}
-                    min={0}
-                    onChange={(e) =>
-                      setTime(i, "hours", Number(e.target.value || 0))
-                    }
-                  />
-
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    hours
-                  </div>
-                </div>
-
-                <div>
-                  <input
-                    className="input"
-                    type="number"
-                    value={row.ri}
+                    className="slider"
+                    type="range"
                     min={1}
                     max={10}
-                    onChange={(e) =>
-                      setTime(i, "ri", Number(e.target.value || 5))
-                    }
+                    step={1}
+                    value={timeMap[systemIndex].ri}
+                    onChange={(e) => setRI(systemIndex, Number(e.target.value))}
                   />
 
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    RI
-                  </div>
+                  <div className="pill">{timeMap[systemIndex].ri}/10 RI</div>
                 </div>
               </div>
             </div>
           ))}
-        </div>
-
-        <div
-          style={{
-            marginTop: 18,
-            fontSize: 18,
-            fontWeight: 800,
-            color:
-              remaining === 0
-                ? "var(--teal)"
-                : remaining > 0
-                ? "var(--amber)"
-                : "var(--rose)",
-          }}
-        >
-          {remaining === 0
-            ? "168/168 hours allocated"
-            : remaining > 0
-            ? `${remaining} hours remaining`
-            : `${-remaining} hours over`}
         </div>
       </section>
 
@@ -519,18 +623,11 @@ export default function SurveyPage() {
             opacity: 0.92,
           }}
         >
-          PLM+ will analyze your answers, emotional load, and time allocation
+          PLM+ will analyze your answers, emotional load, and life system map
           to generate your personalized morale report.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            marginTop: 24,
-          }}
-        >
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
           <button
             className="btn"
             style={{
@@ -538,12 +635,10 @@ export default function SurveyPage() {
               color: "var(--primaryA)",
               fontWeight: 800,
             }}
-            disabled={loading || remaining !== 0}
+            disabled={loading}
             onClick={calculate}
           >
-            {loading
-              ? "Calculating..."
-              : "Generate My Life Morale →"}
+            {loading ? "Calculating..." : "Generate My Life Morale →"}
           </button>
 
           <button

@@ -37,7 +37,10 @@ export default function ResultsPage() {
   const router = useRouter();
 
   const [result, setResult] = useState<any | null>(null);
-  const [input, setInput] = useState<{ ELI?: number } | null>(null);
+  const [input, setInput] = useState<{
+    ELI?: number;
+    estimatedTotalHours?: number;
+  } | null>(null);
 
   useEffect(() => {
     const rawR = localStorage.getItem("LMI_RESULT");
@@ -129,10 +132,7 @@ export default function ResultsPage() {
     };
   }
 
-  const stateOfLife = getStateOfLife(
-    final,
-    input?.ELI ?? 5
-  );
+  const stateOfLife = getStateOfLife(final, input?.ELI ?? 5);
 
   if (!result) {
     return (
@@ -200,12 +200,12 @@ export default function ResultsPage() {
             maxWidth: 720,
           }}
         >
-          This score reflects how your time, energy,
-          emotional load, recovery, purpose, and
-          responsibilities are currently interacting.
+          This score reflects how your life systems,
+          emotional load, recovery, purpose,
+          relationships, and daily pressures are
+          currently interacting.
         </p>
 
-        {/* STATE OF LIFE */}
         <div
           className="card"
           style={{
@@ -277,6 +277,12 @@ export default function ResultsPage() {
           <div className="pill">
             <b>RI Adjusted:</b> {riAdj.toFixed(2)}
           </div>
+
+          {typeof input?.estimatedTotalHours === "number" && (
+            <div className="pill">
+              <b>Life Density:</b> {input.estimatedTotalHours} hrs
+            </div>
+          )}
 
           <div
             className="pill"
@@ -428,11 +434,11 @@ export default function ResultsPage() {
             opacity: 0.92,
           }}
         >
-          The next step is understanding what this
-          score means category by category — where
-          your life is supported, where it is
-          strained, and what small changes may create
-          the highest return.
+          The next step is understanding how your
+          life systems interact — where your morale
+          is supported, where emotional pressure
+          spills over, and which small adjustments
+          may create the highest overall return.
         </p>
 
         <div

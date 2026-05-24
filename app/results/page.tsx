@@ -1,46 +1,206 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import LogoPLM from "@/components/LogoPLM";
 
-type Item = { index: number; score: number; note?: string };
+type Slide = {
+  category: string;
+  icon: string;
+  title: string;
+  message: string;
+  actions: string[];
+  mood: string;
+  gradient: string;
+};
 
-const QUESTIONS = [
-  "Life direction / sense of trajectory",
-  "Alignment with personal values",
-  "Sense of purpose / meaning",
-  "Personal growth / learning",
-  "Pride in overcoming challenges",
-  "Emotional connection to close people",
-  "Support from family / friends",
-  "Romantic / intimate fulfillment",
-  "Contribution / helping others",
-  "Authentic self-expression",
-  "Control over time / schedule",
-  "Work meaning / responsibility quality",
-  "Manageable workload / routine",
-  "Freedom to choose / autonomy",
-  "Financial security",
-  "Physical health & energy",
-  "Rest & sleep quality",
-  "Nutrition & self-care",
-  "Motivation to care for body",
-  "Comfort / confidence in own skin",
-  "Stress / anxiety management",
-  "Emotional balance / calm",
-  "Hopefulness about the future",
-  "Inner peace / contentment",
+function getStateOfLife(score: number, eli: number = 5) {
+  if (score >= 7.8) {
+    return {
+      title: "Aligned Growth",
+      mood: "Alignment",
+      icon: "🌿",
+      message:
+        "Your current systems appear relatively aligned. Momentum, recovery, and meaning are reinforcing each other more than competing.",
+    };
+  }
+
+  if (score >= 6.8 && eli <= 4) {
+    return {
+      title: "High Pressure / High Meaning",
+      mood: "Endurance",
+      icon: "⚡",
+      message:
+        "You appear to be carrying meaningful responsibility under pressure. Direction is helping sustain you through stress.",
+    };
+  }
+
+  if (score >= 6.0) {
+    return {
+      title: "Stable Momentum",
+      mood: "Stability",
+      icon: "🧭",
+      message:
+        "Your foundation appears relatively stable, though some systems may still require refinement and better recovery balance.",
+    };
+  }
+
+  if (score >= 5.0 && eli <= 4) {
+    return {
+      title: "Purpose-Driven Pressure",
+      mood: "Pressure",
+      icon: "💭",
+      message:
+        "Purpose and obligation may currently be compensating for emotional fatigue or overload.",
+    };
+  }
+
+  if (score >= 4.5) {
+    return {
+      title: "Emotional Drag",
+      mood: "Weight",
+      icon: "〰️",
+      message:
+        "Certain unresolved pressures or emotional leaks may be reducing your morale more than you consciously realize.",
+    };
+  }
+
+  if (score >= 3.5) {
+    return {
+      title: "Rebuilding Phase",
+      mood: "Recovery",
+      icon: "🛠️",
+      message:
+        "Your current season may involve recalibration, emotional rebuilding, or restructuring multiple parts of life at once.",
+    };
+  }
+
+  return {
+    title: "Recovery Deficit",
+    mood: "Restoration",
+    icon: "🌙",
+    message:
+      "Your system appears heavily strained. Restoration and stabilization may currently matter more than optimization.",
+  };
+}
+
+const SLIDES: Slide[] = [
+  {
+    category: "Life Systems",
+    icon: "🌿",
+    title: "Your Life Systems Are Interacting",
+    mood: "Clarity",
+    message:
+      "PLM+ measures how emotional load, relationships, work pressure, recovery, purpose, and daily responsibilities interact beneath the surface of your life.",
+    actions: [
+      "Identify which systems stabilize you emotionally.",
+      "Notice where emotional pressure spills into other areas.",
+      "Focus on improving one high-impact system first.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#022c22,#065f46,#10b981,#a7f3d0)",
+  },
+
+  {
+    category: "Relationships",
+    icon: "💚",
+    title: "Connection & Emotional Carryover",
+    mood: "Attachment",
+    message:
+      "Relationships often influence work, stress, sleep, motivation, and emotional resilience more than people consciously realize.",
+    actions: [
+      "Protect emotionally safe relationships.",
+      "Reduce repetitive emotional conflict.",
+      "Notice who restores versus drains your nervous system.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#064e3b,#047857,#34d399,#d1fae5)",
+  },
+
+  {
+    category: "Work Pressure",
+    icon: "💵",
+    title: "Pressure, Responsibility & Stability",
+    mood: "Pressure",
+    message:
+      "Financial and work pressure consume mental bandwidth long before they visibly affect external success or material comfort.",
+    actions: [
+      "Reduce one recurring pressure point.",
+      "Improve predictability before chasing luxury.",
+      "Build systems that protect emotional recovery.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#14532d,#15803d,#4ade80,#dcfce7)",
+  },
+
+  {
+    category: "Recovery",
+    icon: "🛌",
+    title: "Recovery Shapes Perception",
+    mood: "Restoration",
+    message:
+      "When recovery drops too low, even manageable problems begin to feel emotionally overwhelming. Exhaustion distorts interpretation.",
+    actions: [
+      "Prioritize sleep consistency.",
+      "Protect at least one calm period daily.",
+      "Reduce overstimulation before sleep.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#0f172a,#164e63,#0f766e,#99f6e4)",
+  },
+
+  {
+    category: "Purpose",
+    icon: "🧭",
+    title: "Direction Creates Endurance",
+    mood: "Meaning",
+    message:
+      "Purpose increases resilience, but purpose alone cannot sustainably compensate for emotional overload or burnout forever.",
+    actions: [
+      "Reconnect effort to identity.",
+      "Clarify what you are building toward.",
+      "Support ambition structurally, not emotionally alone.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#134e4a,#0d9488,#2dd4bf,#fef3c7)",
+  },
+
+  {
+    category: "Life Density",
+    icon: "⚡",
+    title: "Some Systems Overlap",
+    mood: "Systems Thinking",
+    message:
+      "One hour of life can affect multiple systems simultaneously. Work can influence relationships. Relationships can influence recovery. PLM+ models those overlaps.",
+    actions: [
+      "Reduce unnecessary emotional friction.",
+      "Notice where stress leaks across systems.",
+      "Focus on changes that improve multiple areas at once.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#022c22,#047857,#10b981,#fef9c3)",
+  },
+
+  {
+    category: "Next Move",
+    icon: "🚀",
+    title: "Small Adjustments Compound",
+    mood: "Momentum",
+    message:
+      "You do not need to rebuild your entire life immediately. Small structural improvements across recovery, relationships, pressure, and purpose compound over time.",
+    actions: [
+      "Choose one realistic improvement this week.",
+      "Reduce one recurring emotional drain.",
+      "Retake PLM+ later and compare system shifts.",
+    ],
+    gradient:
+      "linear-gradient(135deg,#052e2b,#0f766e,#14b8a6,#ccfbf1)",
+  },
 ];
 
-export default function ResultsPage() {
-  const router = useRouter();
-
+export default function NextStepsPage() {
+  const [index, setIndex] = useState(0);
   const [result, setResult] = useState<any | null>(null);
-  const [input, setInput] = useState<{
-    ELI?: number;
-    estimatedTotalHours?: number;
-  } | null>(null);
+  const [input, setInput] = useState<any | null>(null);
 
   useEffect(() => {
     const rawR = localStorage.getItem("LMI_RESULT");
@@ -50,435 +210,263 @@ export default function ResultsPage() {
     if (rawI) setInput(JSON.parse(rawI));
   }, []);
 
-  const MAX = 8.75;
-
   const final =
-    typeof result?.finalLMI === "number" ? result.finalLMI : 0;
-
-  const raw =
-    typeof result?.rawLMS === "number" ? result.rawLMS : 0;
-
-  const riAdj =
-    typeof result?.riAdjusted === "number"
-      ? result.riAdjusted
+    typeof result?.finalLMI === "number"
+      ? result.finalLMI
       : 0;
 
-  const pct = useMemo(() => {
-    return Math.round(
-      (Math.max(0, Math.min(final, MAX)) / MAX) * 100
-    );
-  }, [final]);
+  const dynamicState = getStateOfLife(
+    final,
+    input?.ELI ?? 5
+  );
 
-  function getStateOfLife(score: number, eli: number = 5) {
-    if (score >= 7.8) {
-      return {
-        title: "Aligned Growth",
-        color: "var(--teal)",
-        description:
-          "Your current systems appear relatively aligned. Momentum, recovery, and meaning are supporting each other more than they are competing.",
-      };
-    }
+  const dynamicSlides = [...SLIDES];
 
-    if (score >= 6.8 && eli <= 4) {
-      return {
-        title: "High Pressure / High Meaning",
-        color: "var(--primaryA)",
-        description:
-          "Your life may currently carry significant pressure, but your sense of meaning and direction appears to be sustaining you through it.",
-      };
-    }
+  dynamicSlides[0] = {
+    ...dynamicSlides[0],
+    title: dynamicState.title,
+    mood: dynamicState.mood,
+    icon: dynamicState.icon,
+    message: dynamicState.message,
+  };
 
-    if (score >= 6.0) {
-      return {
-        title: "Stable Momentum",
-        color: "var(--primaryA)",
-        description:
-          "Your foundation appears relatively stable, though certain systems may still require refinement or better recovery balance.",
-      };
-    }
+  const slide = dynamicSlides[index];
 
-    if (score >= 5.0 && eli <= 4) {
-      return {
-        title: "Purpose-Driven Pressure",
-        color: "var(--amber)",
-        description:
-          "You may currently be relying on purpose and responsibility to compensate for stress, fatigue, or emotional overload.",
-      };
-    }
-
-    if (score >= 4.5) {
-      return {
-        title: "Emotional Drag",
-        color: "var(--amber)",
-        description:
-          "Certain unresolved pressures or energy leaks may be reducing your overall morale more than you consciously realize.",
-      };
-    }
-
-    if (score >= 3.5) {
-      return {
-        title: "Rebuilding Phase",
-        color: "var(--rose)",
-        description:
-          "Your current season may involve recovery, recalibration, or restructuring multiple parts of life simultaneously.",
-      };
-    }
-
-    return {
-      title: "Recovery Deficit",
-      color: "var(--rose)",
-      description:
-        "Your system appears heavily strained. The next priority is likely restoration, stabilization, and reducing morale leakage.",
-    };
-  }
-
-  const stateOfLife = getStateOfLife(final, input?.ELI ?? 5);
-
-  if (!result) {
-    return (
-      <main className="main grid" style={{ gap: 20 }}>
-        <section
-          className="card center"
-          style={{ padding: "56px 24px" }}
-        >
-          <LogoPLM size={54} />
-
-          <h1>No results yet</h1>
-
-          <p className="muted">
-            Take the PLM+ reflection to generate your
-            Life Morale report.
-          </p>
-
-          <button
-            className="btn primary"
-            onClick={() => router.push("/survey")}
-          >
-            Start Reflection →
-          </button>
-        </section>
-      </main>
-    );
-  }
+  const progress = useMemo(
+    () =>
+      Math.round(
+        ((index + 1) / dynamicSlides.length) * 100
+      ),
+    [index, dynamicSlides.length]
+  );
 
   return (
     <main className="main grid" style={{ gap: 24 }}>
       <section
         className="card"
         style={{
+          minHeight: 760,
           position: "relative",
           overflow: "hidden",
-          padding: "42px 28px",
-          background:
-            "radial-gradient(circle at top left, rgba(52,211,153,.34), transparent 34%), linear-gradient(135deg,#fafff8,#ecfdf5)",
+          background: slide.gradient,
+          color: "white",
+          padding: "42px 34px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
         }}
       >
-        <LogoPLM size={52} />
-
         <div
-          className="pill"
-          style={{ marginTop: 22, width: "fit-content" }}
-        >
-          Your Life Intelligence Report
-        </div>
-
-        <h1
           style={{
-            fontSize: "clamp(44px,8vw,84px)",
-            lineHeight: 0.95,
-            margin: "22px 0 10px",
-          }}
-        >
-          Your Life Morale is {final.toFixed(2)}
-        </h1>
-
-        <p
-          className="muted"
-          style={{
-            fontSize: 19,
-            lineHeight: 1.65,
-            maxWidth: 720,
-          }}
-        >
-          This score reflects how your life systems,
-          emotional load, recovery, purpose,
-          relationships, and daily pressures are
-          currently interacting.
-        </p>
-
-        <div
-          className="card"
-          style={{
-            marginTop: 26,
+            position: "absolute",
+            inset: 0,
             background:
-              "linear-gradient(135deg, rgba(255,255,255,.82), rgba(240,255,248,.92))",
-            border:
-              "1px solid rgba(52,211,153,.18)",
+              "radial-gradient(circle at 15% 20%, rgba(255,255,255,.22), transparent 28%), radial-gradient(circle at 80% 10%, rgba(255,255,255,.14), transparent 30%), radial-gradient(circle at 50% 90%, rgba(255,255,255,.08), transparent 32%)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            right: -10,
+            top: 10,
+            fontSize: 260,
+            opacity: 0.12,
           }}
         >
-          <div className="label">
-            Current State of Life
-          </div>
-
-          <h2
-            style={{
-              marginTop: 10,
-              marginBottom: 10,
-              color: stateOfLife.color,
-              fontSize: "clamp(30px,5vw,54px)",
-            }}
-          >
-            {stateOfLife.title}
-          </h2>
-
-          <p
-            className="muted"
-            style={{
-              fontSize: 17,
-              lineHeight: 1.7,
-              maxWidth: 760,
-              marginBottom: 0,
-            }}
-          >
-            {stateOfLife.description}
-          </p>
+          {slide.icon}
         </div>
 
-        <div style={{ marginTop: 26 }}>
-          <div className="progress" style={{ height: 16 }}>
-            <div style={{ width: `${pct}%` }} />
-          </div>
-
+        <div style={{ position: "relative", zIndex: 2 }}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginTop: 10,
-              color: "var(--muted)",
-              fontSize: 13,
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
-            <span>Low</span>
-            <span>Building</span>
-            <span>Stable</span>
-            <span>High</span>
-          </div>
-        </div>
+            <LogoPLM size={46} />
 
-        <div className="kpi" style={{ marginTop: 24 }}>
-          <div className="pill">
-            <b>Final LMI:</b> {final.toFixed(2)} / {MAX}
-          </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,.14)",
+                  fontWeight: 800,
+                }}
+              >
+                {slide.mood}
+              </div>
 
-          <div className="pill">
-            <b>Raw LMS:</b> {raw.toFixed(2)}
-          </div>
-
-          <div className="pill">
-            <b>RI Adjusted:</b> {riAdj.toFixed(2)}
-          </div>
-
-          {typeof input?.estimatedTotalHours === "number" && (
-            <div className="pill">
-              <b>Life Density:</b> {input.estimatedTotalHours} hrs
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,.14)",
+                  fontWeight: 800,
+                }}
+              >
+                {index + 1}/{dynamicSlides.length}
+              </div>
             </div>
-          )}
-
-          <div
-            className="pill"
-            style={{ color: stateOfLife.color }}
-          >
-            <b>{stateOfLife.title}</b>
           </div>
 
-          {typeof input?.ELI === "number" && (
-            <div className="pill">
-              <b>ELI:</b> {input.ELI}
+          <div style={{ marginTop: 40 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                padding: "10px 14px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,.14)",
+                marginBottom: 20,
+                fontWeight: 800,
+              }}
+            >
+              {slide.category}
             </div>
-          )}
-        </div>
-      </section>
 
-      <section className="grid cols-2">
-        <div className="card">
-          <div className="label">Top Drainers</div>
+            <h1
+              style={{
+                fontSize: "clamp(46px,7vw,90px)",
+                lineHeight: 0.95,
+                margin: "0 0 22px",
+                maxWidth: 900,
+              }}
+            >
+              {slide.title}
+            </h1>
 
-          <h2>Where your morale is leaking</h2>
-
-          {Array.isArray(result.topDrainers) &&
-          result.topDrainers.length ? (
-            <div className="grid" style={{ gap: 12 }}>
-              {result.topDrainers.map(
-                (d: Item, i: number) => {
-                  const label =
-                    QUESTIONS[d.index] ??
-                    `Question ${d.index + 1}`;
-
-                  return (
-                    <div
-                      key={i}
-                      className="card"
-                      style={{ background: "#fff8f4" }}
-                    >
-                      <div
-                        className="pill"
-                        style={{ width: "fit-content" }}
-                      >
-                        Score {d.score}/10
-                      </div>
-
-                      <h3 style={{ marginBottom: 6 }}>
-                        {label}
-                      </h3>
-
-                      <p
-                        className="muted"
-                        style={{ margin: 0 }}
-                      >
-                        {d.note ||
-                          "This area may be creating emotional drag."}
-                      </p>
-                    </div>
-                  );
-                }
-              )}
-            </div>
-          ) : (
-            <p className="muted">
-              No major drainers detected.
+            <p
+              style={{
+                fontSize: 22,
+                lineHeight: 1.7,
+                maxWidth: 760,
+                opacity: 0.94,
+              }}
+            >
+              {slide.message}
             </p>
-          )}
+          </div>
         </div>
 
-        <div className="card">
-          <div className="label">Top Uplifters</div>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            display: "grid",
+            gap: 14,
+            marginTop: 30,
+          }}
+        >
+          {slide.actions.map((action, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "18px 18px",
+                borderRadius: 22,
+                background: "rgba(255,255,255,.12)",
+                backdropFilter: "blur(14px)",
+                fontSize: 17,
+                lineHeight: 1.5,
+                fontWeight: 700,
+              }}
+            >
+              <span
+                style={{
+                  opacity: 0.7,
+                  marginRight: 8,
+                }}
+              >
+                0{i + 1}
+              </span>
 
-          <h2>What is carrying you forward</h2>
-
-          {Array.isArray(result.topUplifters) &&
-          result.topUplifters.length ? (
-            <div className="grid" style={{ gap: 12 }}>
-              {result.topUplifters.map(
-                (d: Item, i: number) => {
-                  const label =
-                    QUESTIONS[d.index] ??
-                    `Question ${d.index + 1}`;
-
-                  return (
-                    <div
-                      key={i}
-                      className="card"
-                      style={{ background: "#f0fff8" }}
-                    >
-                      <div
-                        className="pill"
-                        style={{ width: "fit-content" }}
-                      >
-                        Score {d.score}/10
-                      </div>
-
-                      <h3 style={{ marginBottom: 6 }}>
-                        {label}
-                      </h3>
-
-                      <p
-                        className="muted"
-                        style={{ margin: 0 }}
-                      >
-                        {d.note ||
-                          "This area is currently supporting your morale."}
-                      </p>
-                    </div>
-                  );
-                }
-              )}
+              {action}
             </div>
-          ) : (
-            <p className="muted">
-              No major uplifters detected.
-            </p>
-          )}
+          ))}
         </div>
       </section>
 
       <section
         className="card"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(15,118,110,.96), rgba(52,211,153,.92))",
-          color: "white",
-          padding: "42px 28px",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
-        <div
-          className="label"
-          style={{ color: "rgba(255,255,255,.75)" }}
+        <button
+          className="btn ghost"
+          onClick={() => {
+            if (index === 0) {
+              window.location.href = "/results";
+            } else {
+              setIndex((i) =>
+                Math.max(0, i - 1)
+              );
+            }
+          }}
         >
-          Interpretation
+          {index === 0
+            ? "Back to Results"
+            : "Previous"}
+        </button>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          {dynamicSlides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              style={{
+                width: i === index ? 36 : 10,
+                height: 10,
+                borderRadius: 999,
+                border: "none",
+                background:
+                  i === index
+                    ? "var(--primaryA)"
+                    : "rgba(15,118,110,.18)",
+                transition: ".25s ease",
+                cursor: "pointer",
+              }}
+            />
+          ))}
         </div>
 
-        <h2
-          style={{
-            fontSize: "clamp(32px,5vw,56px)",
-            marginBottom: 12,
-          }}
-        >
-          Your score is only the beginning.
-        </h2>
-
-        <p
-          style={{
-            fontSize: 18,
-            lineHeight: 1.65,
-            maxWidth: 760,
-            opacity: 0.92,
-          }}
-        >
-          The next step is understanding how your
-          life systems interact — where your morale
-          is supported, where emotional pressure
-          spills over, and which small adjustments
-          may create the highest overall return.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            marginTop: 24,
-          }}
-        >
+        {index < dynamicSlides.length - 1 ? (
           <button
-            className="btn"
-            style={{
-              background: "white",
-              color: "var(--primaryA)",
-              fontWeight: 900,
-            }}
+            className="btn primary"
             onClick={() =>
-              router.push("/next-steps")
+              setIndex((i) =>
+                Math.min(
+                  dynamicSlides.length - 1,
+                  i + 1
+                )
+              )
             }
           >
-            View My Next Steps →
+            Continue →
           </button>
-
+        ) : (
           <button
-            className="btn ghost"
+            className="btn primary"
             onClick={() =>
-              router.push("/survey")
+              (window.location.href = "/survey")
             }
           >
-            Retake Reflection
+            Retake PLM+
           </button>
-
-          <button
-            className="btn ghost"
-            onClick={() => router.push("/")}
-          >
-            Home
-          </button>
-        </div>
+        )}
       </section>
     </main>
   );

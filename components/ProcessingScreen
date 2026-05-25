@@ -1,0 +1,53 @@
+"use client";
+
+import { motion } from "framer-motion";
+import LogoPLM from "./LogoPLM";
+
+const STEPS = [
+  "Reading emotional patterns...",
+  "Mapping life systems...",
+  "Calculating residual influence...",
+  "Estimating life density...",
+  "Preparing your Life Morale report...",
+];
+
+export default function ProcessingScreen() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+        background:
+          "radial-gradient(circle at top left, rgba(52,211,153,.35), transparent 34%), linear-gradient(135deg,#fafff8,#ecfdf5)",
+      }}
+    >
+      <div className="card center" style={{ maxWidth: 520, padding: 36 }}>
+        <motion.div
+          animate={{ scale: [1, 1.04, 1] }}
+          transition={{ duration: 3, repeat: Infinity }}
+        >
+          <LogoPLM size={70} />
+        </motion.div>
+
+        <h1>Analyzing your life systems...</h1>
+
+        <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+          {STEPS.map((step, i) => (
+            <motion.div
+              key={step}
+              className="pill"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.45 }}
+              style={{ justifyContent: "center" }}
+            >
+              {step}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoPLM from "@/components/LogoPLM";
+import SplashScreen from "@/components/SplashScreen";
 
 const FLOATING_CARDS = [
   { icon: "🧠", label: "Emotional Load", value: "ELI" },
@@ -13,6 +15,19 @@ const FLOATING_CARDS = [
 
 export default function Home() {
   const router = useRouter();
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <main className="main grid" style={{ gap: 28 }}>

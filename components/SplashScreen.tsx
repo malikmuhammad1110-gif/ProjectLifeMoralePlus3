@@ -9,95 +9,49 @@ export default function SplashScreen() {
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 1 }}
+      transition={{ duration: 0.8 }}
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
+        width: "100%",
+        height: "100vh",
+        background:
+          "linear-gradient(135deg,#ecfdf5 0%,#f0fdf4 45%,#d1fae5 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        overflow: "hidden",
-        background:
-          "linear-gradient(135deg,#021a16,#064e3b,#0f766e,#34d399)",
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
       }}
     >
-      {/* Glow Effects */}
-      <div
-        style={{
-          position: "absolute",
-          width: 500,
-          height: 500,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,.08)",
-          filter: "blur(80px)",
-          top: -120,
-          left: -120,
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,.06)",
-          filter: "blur(90px)",
-          bottom: -120,
-          right: -120,
-        }}
-      />
-
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.92, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{
-          duration: 1.1,
+          duration: 1,
           ease: "easeOut",
         }}
         style={{
-          textAlign: "center",
-          position: "relative",
-          zIndex: 2,
-          padding: 20,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 18,
         }}
       >
+        <LogoPLM size={82} />
+
         <motion.div
-          animate={{
-            scale: [1, 1.03, 1],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.75 }}
+          transition={{ delay: 0.6, duration: 1 }}
+          style={{
+            fontSize: 16,
+            fontWeight: 500,
+            color: "#0f766e",
+            letterSpacing: 0.3,
           }}
         >
-          <LogoPLM size={88} />
+          Project Life Morale
         </motion.div>
-
-        <h1
-          style={{
-            color: "white",
-            fontSize: "clamp(48px,8vw,88px)",
-            margin: "24px 0 12px",
-            fontWeight: 900,
-            letterSpacing: "-0.05em",
-          }}
-        >
-          PLM+
-        </h1>
-
-        <p
-          style={{
-            color: "rgba(255,255,255,.84)",
-            fontSize: 20,
-            lineHeight: 1.7,
-            maxWidth: 560,
-            margin: "0 auto",
-          }}
-        >
-          Measure your morale. Design your peace.
-        </p>
       </motion.div>
     </motion.div>
   );
